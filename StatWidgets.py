@@ -53,18 +53,16 @@ class StringStats(QWidget):
                     ('damage desc', 'most damaging'),
                     ])
 
-        wc = SettingsCombo('ana_what', ['keys', 'trigrams', 'words'])
         lim = SettingsEdit('ana_many')
         self.w_count = SettingsEdit('ana_count')
 
         self.connect(Settings, SIGNAL("change_ana_which"), self.update)
-        self.connect(Settings, SIGNAL("change_ana_what"), self.update)
         self.connect(Settings, SIGNAL("change_ana_many"), self.update)
         self.connect(Settings, SIGNAL("change_ana_count"), self.update)
         self.connect(Settings, SIGNAL("history"), self.update)
 
         self.setLayout(AmphBoxLayout([
-                ["Display statistics about the", ob, wc, None, AmphButton("Update List", self.update)],
+                ["Display statistics about the", ob, "words", None, AmphButton("Update List", self.update)],
                 ["Limit list to", lim, "items and don't show items with a count less than", self.w_count,
                     None, None],
                 (self.stats, 1)
@@ -73,7 +71,6 @@ class StringStats(QWidget):
     def update(self, *arg):
 
         ord = Settings.get('ana_which')
-        cat = Settings.get('ana_what')
         limit = Settings.get('ana_many')
         count = Settings.get('ana_count')
         hist = time.time() - Settings.get('history') * 86400.0
@@ -85,9 +82,9 @@ class StringStats(QWidget):
                 from
                     (select data,agg_median(time) as time,agg_median(viscosity) as viscosity,
                     sum(count) as total,sum(mistakes) as misses
-                    from statistic where w >= ? and type = ? group by data)
+                    from statistic where w >= ? group by data)
                 where total >= ?
                 order by %s limit %d""" % (ord, limit)
 
-        self.model.setData(DB.fetchall(sql, (hist, cat, count)))
+        self.model.setData(DB.fetchall(sql, (hist, count)))
 

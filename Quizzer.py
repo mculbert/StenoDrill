@@ -136,12 +136,6 @@ class Typer(QTextEdit):
         return inv
 
     def getStats(self):
-        if self.when[0] == -1:
-            t = self.times[1:]
-            t.sort(reverse=True)
-            v = DB.fetchone('select time from statistic where type = 0 and data = ? order by rowid desc limit 1', (t[len(t)//5], ), (self.target[0], ))
-            self.times[0] = v[0]
-            self.when[0] = self.when[1] - self.times[0]
         return self.when[self.where]-self.when[0], self.where, self.times, self.mistake, self.getMistakes()
 
 class Quizzer(QWidget):
@@ -206,39 +200,24 @@ class Quizzer(QWidget):
         visc = collections.defaultdict(Statistic)
         text = self.text[2]
 
-        for c, t, m in zip(text, times, mis):
-            stats[c].append(t, m)
-            visc[c].append(((t-spc)/spc)**2)
-
         def gen_tup(s, e):
             perch = sum(times[s:e])/(e-s)
             visc = sum(map(lambda x: ((x-perch)/perch)**2, times[s:e]))/(e-s)
             return (text[s:e], perch, len(filter(None, mis[s:e])), visc)
 
-        for tri, t, m, v in [gen_tup(i, i+3) for i in xrange(0, chars-2)]:
-            stats[tri].append(t, m > 0)
-            visc[tri].append(v)
-
         regex = re.compile(r"(\w|'(?![A-Z]))+(-\w(\w|')*)*")
 
-        for w, t, m, v in [gen_tup(*x.span()) for x in regex.finditer(text) if x.end()-x.start() > 3]:
+        for w, t, m, v in [gen_tup(*x.span()) for x in regex.finditer(text)]:
             stats[w].append(t, m > 0)
             visc[w].append(v)
-
-        def type(k):
-            if len(k) == 1:
-                return 0
-            elif len(k) == 3:
-                return 1
-            return 2
 
         vals = []
         for k, s in stats.iteritems():
             v = visc[k].median()
-            vals.append( (s.median(), v*100.0, now, len(s), s.flawed(), type(k), k) )
+            vals.append( (s.median(), v*100.0, now, len(s), s.flawed(), k) )
 
         DB.executemany_('''insert into statistic
-            (time,viscosity,w,count,mistakes,type,data) values (?,?,?,?,?,?,?)''', vals)
+            (time,viscosity,w,count,mistakes,data) values (?,?,?,?,?,?)''', vals)
         DB.executemany_('insert into mistake (w,target,mistake,count) values (?,?,?,?)',
                 [(now, k[0], k[1], v) for k, v in mistakes.iteritems()])
         

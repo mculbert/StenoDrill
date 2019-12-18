@@ -45,7 +45,6 @@ class AmphSettings(QSettings):
             "group_day": 7.0,
 
             "ana_which": "wpm asc",
-            "ana_what": 0,
             "ana_many": 30,
             "ana_count": 1,
 
