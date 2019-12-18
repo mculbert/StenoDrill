@@ -19,15 +19,11 @@ class AmphSettings(QSettings):
     defaults = {
             "typer_font": str(QFont("Arial", 14).toString()),
             "history": 30.0,
-            "min_chars": 220,
-            "max_chars": 600,
-            "lesson_stats": 0, # show text/lesson in perf -- not used anymore
             "perf_group_by": 0,
             "perf_items": 100,
             "text_regex": r"",
             "db_name": _dbname,
-            "select_method": 0,
-            "num_rand": 50,
+            "num_rand": 10,
             "graph_what": 3,
             "req_space": True,
             "show_last": True,
@@ -38,14 +34,6 @@ class AmphSettings(QSettings):
             "minutes_in_sitting": 60.0,
             "dampen_average": 10,
             "def_group_by": 10,
-
-            "use_lesson_stats": False,
-            "auto_review": False,
-
-            "min_wpm": 0.0,
-            "min_acc": 0.0,
-            "min_lesson_wpm": 0.0,
-            "min_lesson_acc": 97.0,
 
             "quiz_right_fg": "#000000",
             "quiz_right_bg": "#ffffff",
@@ -180,10 +168,7 @@ class PreferenceWidget(QWidget):
 
         self.setLayout(AmphBoxLayout([
             ["Typer font is", self.font_lbl, AmphButton("Change...", self.setFont), None],
-            [SettingsCheckBox('auto_review', "Automatically review slow and mistyped words after texts."),
-                ('<a href="http://code.google.com/p/amphetype/wiki/Settings">(help)</a>\n', 1)],
             SettingsCheckBox('show_last', "Show last result(s) above text in the Typer."),
-            SettingsCheckBox('use_lesson_stats', "Save key/trigram/word statistics from generated lessons."),
             [SettingsCheckBox('req_space', "Make SPACE mandatory before each session"),
                 ('<a href="http://code.google.com/p/amphetype/wiki/Settings">(help)</a>\n', 1)],
             None,
@@ -198,10 +183,7 @@ class PreferenceWidget(QWidget):
             None,
             ["Data is considered too old to be included in analysis after",
                 SettingsEdit("history"), "days.", None],
-            ["Try to limit texts and lessons to between", SettingsEdit("min_chars"),
-                "and", SettingsEdit("max_chars"), "characters.", None],
-            ["When selecting easy/difficult texts, scan a sample of",
-                SettingsEdit('num_rand'), "texts.", None],
+            ["Show", SettingsEdit('num_rand'), "words at a time.", None],
             ["When grouping by sitting on the Performance tab, consider results more than",
                 SettingsEdit('minutes_in_sitting'), "minutes away to be part of a different sitting.", None],
             ["Group by", SettingsEdit('def_group_by'), "results when displaying last scores and showing last results on the Typer tab.", None],

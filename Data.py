@@ -157,7 +157,7 @@ class AmphDatabase(sqlite3.Connection):
 
     def newDB(self):
         self.executescript("""
-create table source (name text, disabled integer, discount integer);
+create table source (name text, disabled integer);
 create table text (id text primary key, source integer, text text, disabled integer);
 create table result (w real, text_id text, source integer, wpm real, accuracy real, viscosity real);
 create table statistic (w real, data text, type integer, time real, count integer, mistakes integer, viscosity real);
@@ -184,13 +184,13 @@ create view text_source as
             return default
         return g
 
-    def getSource(self, source, lesson=None):
+    def getSource(self, source):
         v = self.fetchall('select rowid from source where name = ? limit 1', (source, ))
         if len(v) > 0:
             self.execute('update source set disabled = NULL where rowid = ?', v[0])
             self.commit()
             return v[0][0]
-        self.execute('insert into source (name,discount) values (?,?)', (source, lesson))
+        self.execute('insert into source (name,disabled) values (?,?)', (source, None))
         return self.getSource(source)
 
 

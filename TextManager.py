@@ -5,8 +5,8 @@ from __future__ import with_statement, division
 import os.path as path
 import time
 import hashlib
+import codecs
 
-from Text import LessonMiner
 from Data import DB
 from QtUtil import *
 from Config import *
@@ -56,7 +56,6 @@ A typing program that not only measures your speed and progress, but also gives 
     def __init__(self, *args):
         super(TextManager, self).__init__(*args)
 
-        self.diff_eval = lambda x: 1
         self.model = SourceModel()
         tv = AmphTree(self.model)
         tv.resizeColumnToContents(1)
@@ -70,7 +69,6 @@ A typing program that not only measures your speed and progress, but also gives 
 
         self.setLayout(AmphBoxLayout(
                 [
-                    ([
                         "Below you will see the different text sources used. Disabling texts or sources deactivates them so they won't be selected for typing. You can double click a text to do that particular text.\n",
                         (self.tree, 1),
                         self.progress,
@@ -82,64 +80,7 @@ A typing program that not only measures your speed and progress, but also gives 
                             AmphButton("Toggle disabled", self.disableSelected),
                             "on all selected texts that match <a href=\"http://en.wikipedia.org/wiki/Regular_expression\">regular expression</a>",
                             SettingsEdit('text_regex')]
-                    ], 1),
-                    [
-                        ["Selection method for new lessons:",
-                            SettingsCombo('select_method', ['Random', 'In Order', 'Difficult', 'Easy']), None],
-                        "(in order works by selecting the next text after the one you completed last, in the order they were added to the database, easy/difficult works by estimating your WPM for several random texts and choosing the fastest/slowest)\n",
-                        20,
-                        AmphGridLayout([
-                            [("Repeat <i>texts</i> that don't meet the following requirements:\n", (1, 3))],
-                            ["WPM:", SettingsEdit("min_wpm")],
-                            ["Accuracy:", SettingsEdit("min_acc"), (None, (0, 1))],
-                            [("Repeat <i>lessons</i> that don't meet the following requirements:\n", (1, 3))],
-                            ["WPM:", SettingsEdit("min_lesson_wpm")],
-                            ["Accuracy:", SettingsEdit("min_lesson_acc")],
-                        ]),
-                        None
-                    ]
-                ], QBoxLayout.LeftToRight))
-
-        self.connect(Settings, SIGNAL("change_select_method"), self.setSelect)
-        self.setSelect(Settings.get('select_method'))
-
-    def setSelect(self, v):
-        if v == 0 or v == 1:
-            self.diff_eval = lambda x: 1
-            self.nextText()
-            return
-
-        hist = time.time() - 86400.0 * Settings.get('history')
-        tri = dict(
-                DB.execute("""
-                    select data,agg_median(time) as wpm from statistic
-                    where w >= ? and type = 1
-                    group by data""", (hist, )).fetchall()) #[(t, (m, c)) for t, m, c in
-
-        g = tri.values()
-        if len(g) == 0:
-            return lambda x: 1
-        g.sort(reverse=True)
-        expect = g[len(g)//4]
-        def _func(v):
-            text = v[2]
-            v = 0
-            s = 0.0
-            for i in xrange(0, len(text)-2):
-                t = text[i:i+3]
-                if t in tri:
-                    s += tri[t]
-                else:
-                    #print "|", t,
-                    s += expect
-                    v +=1
-            avg = s / (len(text)-2)
-            #print text
-            #print " v=%d,s=%f" % (v, 12.0/avg), "ex:", expect
-            return 12.0/avg
-
-        self.diff_eval = _func
-        self.nextText()
+                ], QBoxLayout.TopToBottom))
 
     def addFiles(self):
 
@@ -154,78 +95,50 @@ A typing program that not only measures your speed and progress, but also gives 
 
     def setImpList(self, files):
         self.sender().hide()
-        self.progress.show()
+        #self.progress.show()
         for x in map(unicode, files):
-            self.progress.setValue(0)
+            #self.progress.setValue(0)
             fname = path.basename(x)
-            lm = LessonMiner(x)
-            self.connect(lm, SIGNAL("progress(int)"), self.progress.setValue)
-            self.addTexts(fname, lm, update=False)
+            # Import one word per line,
+            #  optionally tab delimited with stroke following
+            words = [ line.split('\t')[0].strip() for line in
+                       codecs.open(x, "r", "utf_8_sig") ]
+            #self.connect(lm, SIGNAL("progress(int)"), self.progress.setValue)
+            self.addTexts(fname, words, update=False)
 
-        self.progress.hide()
+        #self.progress.hide()
         self.update()
         DB.commit()
 
-    def addTexts(self, source, texts, lesson=None, update=True):
-        id = DB.getSource(source, lesson)
+    def addTexts(self, source, texts, update=True):
+        id = DB.getSource(source)
         r = []
         for x in texts:
             h = hashlib.sha1()
             h.update(x.encode('utf-8'))
             txt_id = h.hexdigest()
-            dis = 1 if lesson == 2 else None
             try:
                 DB.execute("insert into text (id,text,source,disabled) values (?,?,?,?)",
-                           (txt_id, x, id, dis))
+                           (txt_id, x, id, None))
                 r.append(txt_id)
             except Exception, e:
                 pass # silently skip ...
         if update:
             self.update()
-        if lesson:
-            DB.commit()
         return r
-
-    def newReview(self, review):
-        q = self.addTexts("<Reviews>", [review], lesson=2, update=False)
-        if q:
-            v = DB.fetchone("select id,source,text from text where id = ?", self.defaultText, q)
-            self.emit(SIGNAL("setText"), v)
-        else:
-            self.nextText()
 
     def update(self):
         self.emit(SIGNAL("refreshSources"))
         self.model.reset()
 
     def nextText(self):
-
-        type = Settings.get('select_method')
-
-        if type != 1:
-            # Not in order
-            v = DB.execute("select id,source,text from text where disabled is null order by random() limit %d" % Settings.get('num_rand')).fetchall()
-            if len(v) == 0:
-                v = None
-            elif type == 2:
-                v = min(v, key=self.diff_eval)
-            elif type == 3:
-                v = max(v, key=self.diff_eval)
-            else:
-                v = v[0] # random, just pick the first
-        else:
-            # Fetch in order
-            lastid = (0,)
-            g = DB.fetchone("""select r.text_id
-                from result as r left join source as s on (r.source = s.rowid)
-                where (s.discount is null) or (s.discount = 1) order by r.w desc limit 1""", None)
-            if g is not None:
-                lastid = DB.fetchone("select rowid from text where id = ?", lastid, g)
-            v = DB.fetchone("select id,source,text from text where rowid > ? and disabled is null order by rowid asc limit 1", None, lastid)
-
-        if v is None:
+        num_words = Settings.get('num_rand')
+        # Fetch random words
+        v = DB.execute("select id,source,text from text where disabled is null order by random() limit %d" % num_words).fetchall()
+        if len(v) == 0:
             v = self.defaultText
-
+        else:
+            v = ('', 0, ' '.join([ row[2] for row in v ]))
         self.emit(SIGNAL("setText"), v)
 
     def removeUnused(self):

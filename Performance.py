@@ -90,7 +90,6 @@ class PerformanceHistory(QWidget):
 
         self.setLayout(AmphBoxLayout([
                 ["Show", SettingsEdit("perf_items"), "items from",
-                    #SettingsCombo('lesson_stats', ["both", "texts", "lessons"]), "limited to",
                     self.cb_source,
                     "and group by", SettingsCombo('perf_group_by',
                         ["<no grouping>", "%d sessions" % Settings.get('def_group_by'), "sitting", "day"]),
@@ -105,7 +104,6 @@ class PerformanceHistory(QWidget):
 
         self.connect(Settings, SIGNAL("change_perf_items"), self.updateData)
         self.connect(Settings, SIGNAL("change_perf_group_by"), self.updateData)
-        self.connect(Settings, SIGNAL("change_lesson_stats"), self.updateData)
 
     def updateGraph(self):
         pc = Settings.get('graph_what')
@@ -130,7 +128,6 @@ class PerformanceHistory(QWidget):
         self.cb_source.addItem("<ALL>")
         self.cb_source.addItem("<LAST TEXT>")
         self.cb_source.addItem("<ALL TEXTS>")
-        self.cb_source.addItem("<ALL LESSONS>")
 
         for id, v in DB.fetchall('select rowid,abbreviate(name,30) from source order by name'):
             self.cb_source.addItem(v, QVariant(id))
@@ -145,9 +142,7 @@ class PerformanceHistory(QWidget):
         elif self.cb_source.currentIndex() == 1: # last text
             where.append('r.text_id = (select text_id from result order by w desc limit 1)')
         elif self.cb_source.currentIndex() == 2: # all texts
-            where.append('s.discount is null')
-        elif self.cb_source.currentIndex() == 3: # all lessons texts
-            where.append('s.discount is not null')
+            pass
         else:
             s = self.cb_source.itemData(self.cb_source.currentIndex())
             where.append('r.source = %d' % s.toInt()[0])

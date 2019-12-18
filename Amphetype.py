@@ -23,7 +23,6 @@ from StatWidgets import StringStats
 from TextManager import TextManager
 from Performance import PerformanceHistory
 from Config import PreferenceWidget
-from Lesson import LessonGenerator
 from Widgets.Database import DatabaseWidget
 
 from PyQt4.QtCore import *
@@ -57,16 +56,7 @@ class TyperWindow(QMainWindow):
         tabs.addTab(ph, "Performance")
 
         st = StringStats()
-        self.connect(st, SIGNAL("lessonStrings"), lambda x: tabs.setCurrentIndex(4))
         tabs.addTab(st, "Analysis")
-
-        lg = LessonGenerator()
-        self.connect(st, SIGNAL("lessonStrings"), lg.addStrings)
-        self.connect(lg, SIGNAL("newLessons"), lambda: tabs.setCurrentIndex(1))
-        self.connect(lg, SIGNAL("newLessons"), tm.addTexts)
-        self.connect(quiz, SIGNAL("wantReview"), lg.wantReview)
-        self.connect(lg, SIGNAL("newReview"), tm.newReview)
-        tabs.addTab(lg, "Lesson Generator")
 
         dw = DatabaseWidget()
         tabs.addTab(dw, "Database")

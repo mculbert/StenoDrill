@@ -237,33 +237,10 @@ class Quizzer(QWidget):
             v = visc[k].median()
             vals.append( (s.median(), v*100.0, now, len(s), s.flawed(), type(k), k) )
 
-        is_lesson = DB.fetchone("select discount from source where rowid=?", (None,), (self.text[1], ))[0]
-
-        if Settings.get('use_lesson_stats') or not is_lesson:
-            DB.executemany_('''insert into statistic
-                (time,viscosity,w,count,mistakes,type,data) values (?,?,?,?,?,?,?)''', vals)
-            DB.executemany_('insert into mistake (w,target,mistake,count) values (?,?,?,?)',
-                    [(now, k[0], k[1], v) for k, v in mistakes.iteritems()])
-
-        if is_lesson:
-            mins = (Settings.get("min_lesson_wpm"), Settings.get("min_lesson_acc"))
-        else:
-            mins = (Settings.get("min_wpm"), Settings.get("min_acc"))
-
-        if 12.0/spc < mins[0] or accuracy < mins[1]/100.0:
-            self.setText(self.text)
-        elif not is_lesson and Settings.get('auto_review'):
-            ws = filter(lambda x: x[5] == 2, vals)
-            if len(ws) == 0:
-                self.emit(SIGNAL("wantText"))
-                return
-            ws.sort(key=lambda x: (x[4],x[0]), reverse=True)
-            i = 0
-            while ws[i][4] != 0:
-                i += 1
-            i += (len(ws) - i) // 4
-
-            self.emit(SIGNAL("wantReview"), map(lambda x:x[6], ws[0:i]))
-        else:
-            self.emit(SIGNAL("wantText"))
+        DB.executemany_('''insert into statistic
+            (time,viscosity,w,count,mistakes,type,data) values (?,?,?,?,?,?,?)''', vals)
+        DB.executemany_('insert into mistake (w,target,mistake,count) values (?,?,?,?)',
+                [(now, k[0], k[1], v) for k, v in mistakes.iteritems()])
+        
+        self.emit(SIGNAL("wantText"))
 

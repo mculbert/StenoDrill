@@ -5,7 +5,6 @@ import time
 
 from Data import DB
 from QtUtil import *
-from Text import LessonGeneratorPlain
 from Config import *
 
 from PyQt4.QtCore import *
@@ -67,8 +66,7 @@ class StringStats(QWidget):
         self.setLayout(AmphBoxLayout([
                 ["Display statistics about the", ob, wc, None, AmphButton("Update List", self.update)],
                 ["Limit list to", lim, "items and don't show items with a count less than", self.w_count,
-                    None, AmphButton("Send List to Lesson Generator",
-                         lambda: self.emit(SIGNAL("lessonStrings"), [x[0] for x in self.model.words]))],
+                    None, None],
                 (self.stats, 1)
             ]))
 
