@@ -23,7 +23,7 @@ from StatWidgets import StringStats
 from TextManager import TextManager
 from Performance import PerformanceHistory
 from Config import PreferenceWidget
-from Widgets.Database import DatabaseWidget
+from Database import DatabaseWidget
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *

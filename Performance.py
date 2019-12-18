@@ -9,7 +9,7 @@ from Data import DB
 from Config import *
 from QtUtil import *
 
-import Widgets.Plotters as Plotters
+import Plotters
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
