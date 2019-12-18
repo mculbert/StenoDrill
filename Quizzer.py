@@ -184,10 +184,9 @@ class Quizzer(QWidget):
 
         accuracy = 1.0 - len(filter(None, mis)) / chars
         spc = elapsed / chars
-        viscosity = sum(map(lambda x: ((x-spc)/spc)**2, times)) / chars
 
-        DB.execute('insert into result (w,text_id,source,wpm,accuracy,viscosity) values (?,?,?,?,?,?)',
-                   (now, self.text[0], self.text[1], 12.0/spc, accuracy, viscosity))
+        DB.execute('insert into result (w,text_id,source,wpm,accuracy) values (?,?,?,?,?)',
+                   (now, self.text[0], self.text[1], 12.0/spc, accuracy))
 
         v2 = DB.fetchone("""select agg_median(wpm),agg_median(acc) from
             (select wpm,100.0*accuracy as acc from result order by w desc limit %d)""" % Settings.get('def_group_by'), (0.0, 100.0))
@@ -197,27 +196,23 @@ class Quizzer(QWidget):
         self.emit(SIGNAL("statsChanged"))
 
         stats = collections.defaultdict(Statistic)
-        visc = collections.defaultdict(Statistic)
         text = self.text[2]
 
         def gen_tup(s, e):
             perch = sum(times[s:e])/(e-s)
-            visc = sum(map(lambda x: ((x-perch)/perch)**2, times[s:e]))/(e-s)
-            return (text[s:e], perch, len(filter(None, mis[s:e])), visc)
+            return (text[s:e], perch, len(filter(None, mis[s:e])) )
 
         regex = re.compile(r"(\w|'(?![A-Z]))+(-\w(\w|')*)*")
 
-        for w, t, m, v in [gen_tup(*x.span()) for x in regex.finditer(text)]:
+        for w, t, m in [gen_tup(*x.span()) for x in regex.finditer(text)]:
             stats[w].append(t, m > 0)
-            visc[w].append(v)
 
         vals = []
         for k, s in stats.iteritems():
-            v = visc[k].median()
-            vals.append( (s.median(), v*100.0, now, len(s), s.flawed(), k) )
+            vals.append( (s.median(), now, len(s), s.flawed(), k) )
 
         DB.executemany_('''insert into statistic
-            (time,viscosity,w,count,mistakes,data) values (?,?,?,?,?,?)''', vals)
+            (time,w,count,mistakes,data) values (?,?,?,?,?)''', vals)
         DB.executemany_('insert into mistake (w,target,mistake,count) values (?,?,?,?)',
                 [(now, k[0], k[1], v) for k, v in mistakes.iteritems()])
         

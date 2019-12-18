@@ -15,8 +15,8 @@ from PyQt4.QtGui import *
 class WordModel(AmphModel):
     def signature(self):
         self.words = []
-        return (["Item", "Speed", "Accuracy", "Viscosity", "Count", "Mistakes", "Impact"],
-                [None, "%.1f wpm", "%.1f%%", "%.1f", None, None, "%.1f"])
+        return (["Item", "Speed", "Accuracy", "Count", "Mistakes"],
+                [None, "%.1f wpm", "%.1f%%", None, None])
 
     def populateData(self, idx):
         if len(idx) != 0:
@@ -45,12 +45,9 @@ class StringStats(QWidget):
         ob = SettingsCombo('ana_which', [
                     ('wpm asc', 'slowest'),
                     ('wpm desc', 'fastest'),
-                    ('viscosity desc', 'least fluid'),
-                    ('viscosity asc', 'most fluid'),
                     ('accuracy asc', 'least accurate'),
                     ('misses desc', 'most mistyped'),
                     ('total desc', 'most common'),
-                    ('damage desc', 'most damaging'),
                     ])
 
         lim = SettingsEdit('ana_many')
@@ -76,11 +73,9 @@ class StringStats(QWidget):
         hist = time.time() - Settings.get('history') * 86400.0
 
         sql = """select data,12.0/time as wpm,
-            100.0-100.0*misses/cast(total as real) as accuracy,
-            viscosity,total,misses,
-            total*time*time*(1.0+misses/total) as damage
+            100.0-100.0*misses/cast(total as real) as accuracy,total,misses
                 from
-                    (select data,agg_median(time) as time,agg_median(viscosity) as viscosity,
+                    (select data,agg_median(time) as time,
                     sum(count) as total,sum(mistakes) as misses
                     from statistic where w >= ? group by data)
                 where total >= ?

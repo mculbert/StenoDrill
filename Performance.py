@@ -30,8 +30,8 @@ class ResultModel(AmphModel):
         self.source = None
         self.data_ = []
         self.hidden = 1
-        return (["When", "Source", "WPM", "Accuracy", "Viscosity"],
-                [self.formatWhen, None, "%.1f", "%.1f%%", "%.1f"])
+        return (["When", "Source", "WPM", "Accuracy"],
+                [self.formatWhen, None, "%.1f", "%.1f%%"])
 
     def populateData(self, idx):
         if len(idx) > 0:
@@ -95,7 +95,7 @@ class PerformanceHistory(QWidget):
                         ["<no grouping>", "%d sessions" % Settings.get('def_group_by'), "sitting", "day"]),
                     None, AmphButton("Update", self.updateData)],
                 (t, 1),
-                ["Plot", SettingsCombo('graph_what', ((3, 'WPM'), (4, 'accuracy'), (5, 'viscosity'))),
+                ["Plot", SettingsCombo('graph_what', ((3, 'WPM'), (4, 'accuracy'), )),
                     SettingsCheckBox("show_xaxis", "Show X-axis"),
                     SettingsCheckBox("chrono_x", "Use time-scaled X-axis"),
                     SettingsCheckBox("dampen_graph", "Dampen graph values"), None],
@@ -154,13 +154,13 @@ class PerformanceHistory(QWidget):
 
         g = Settings.get('perf_group_by')
         if g == 0: # no grouping
-            sql = '''select text_id,w,s.name,wpm,100.0*accuracy,viscosity
+            sql = '''select text_id,w,s.name,wpm,100.0*accuracy
                 from result as r left join source as s on (r.source = s.rowid)
                 %s %s
                 order by w desc limit %d'''
         elif g:
             sql = '''select agg_first(text_id),avg(r.w) as w,count(r.rowid) || ' result(s)',agg_median(r.wpm),
-                        100.0*agg_median(r.accuracy),agg_median(r.viscosity)
+                        100.0*agg_median(r.accuracy)
                 from result as r left join source as s on (r.source = s.rowid)
                 %s %s
                 order by w desc limit %d'''
