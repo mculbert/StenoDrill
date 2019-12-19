@@ -122,7 +122,7 @@ class AmphDatabase(sqlite3.Connection):
         self.create_function("ifelse", 3, lambda x, y, z: y if x is not None else z)
 
         try:
-            self.fetchall("select * from result,source,statistic,text,mistake limit 1")
+            self.fetchall("select * from source,statistic,text limit 1")
         except:
             self.newDB()
 
@@ -159,9 +159,7 @@ class AmphDatabase(sqlite3.Connection):
         self.executescript("""
 create table source (name text, disabled integer);
 create table text (id text primary key, source integer, text text, disabled integer);
-create table result (w real, text_id text, source integer, wpm real, accuracy real);
 create table statistic (w real, data text, time real, count integer, mistakes integer);
-create table mistake (w real, target text, mistake text, count integer);
 create view text_source as
     select id,s.name,text,coalesce(t.disabled,s.disabled)
         from text as t left join source as s on (t.source = s.rowid);

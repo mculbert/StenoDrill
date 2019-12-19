@@ -144,30 +144,11 @@ A typing program that not only measures your speed and progress, but also gives 
             v = ('', 0, ' '.join([ row[2] for row in v ]))
         self.emit(SIGNAL("setText"), v)
 
-    def removeUnused(self):
-        DB.execute('''
-            delete from source where rowid in (
-                select s.rowid from source as s
-                    left join result as r on (s.rowid=r.source)
-                    left join text as t on (t.source=s.rowid)
-                group by s.rowid
-                having count(r.rowid) = 0 and count(t.rowid) = 0
-            )''')
-        DB.execute('''
-            update source set disabled = 1 where rowid in (
-                select s.rowid from source as s
-                    left join result as r on (s.rowid=r.source)
-                    left join text as t on (t.source=s.rowid)
-                group by s.rowid
-                having count(r.rowid) > 0 and count(t.rowid) = 0
-            )''')
-        self.emit(SIGNAL("refreshSources"))
-
     def removeDisabled(self):
-        DB.execute('delete from text where disabled is not null')
-        self.removeUnused()
-        self.update()
-        DB.commit()
+        # FIXME
+        return
+        #self.update()
+        #DB.commit()
 
     def enableAll(self):
         DB.execute('update text set disabled = null where disabled is not null')

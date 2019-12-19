@@ -188,9 +188,6 @@ class Quizzer(QWidget):
         accuracy = 1.0 - len(filter(None, mis)) / chars
         spc = elapsed / chars
 
-        DB.execute('insert into result (w,text_id,source,wpm,accuracy) values (?,?,?,?,?)',
-                   (now, self.text[0], self.text[1], 12.0/spc, accuracy))
-
         self.wpm_num += chars / 5.0
         self.wpm_denom += elapsed / 60.
         self.acc_num += chars - len(filter(None, mis))
@@ -219,8 +216,6 @@ class Quizzer(QWidget):
 
         DB.executemany_('''insert into statistic
             (time,w,count,mistakes,data) values (?,?,?,?,?)''', vals)
-        DB.executemany_('insert into mistake (w,target,mistake,count) values (?,?,?,?)',
-                [(now, k[0], k[1], v) for k, v in mistakes.iteritems()])
         
         self.emit(SIGNAL("wantText"))
 
