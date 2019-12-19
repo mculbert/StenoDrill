@@ -32,7 +32,6 @@ class AmphSettings(QSettings):
 
             "minutes_in_sitting": 60.0,
             "dampen_average": 10,
-            "def_group_by": 10,
 
             "quiz_right_fg": "#000000",
             "quiz_right_bg": "#ffffff",
@@ -183,7 +182,6 @@ class PreferenceWidget(QWidget):
             ["Show", SettingsEdit('num_rand'), "words at a time.", None],
             ["When grouping by sitting on the Performance tab, consider results more than",
                 SettingsEdit('minutes_in_sitting'), "minutes away to be part of a different sitting.", None],
-            ["Group by", SettingsEdit('def_group_by'), "results when displaying last scores and showing last results on the Typer tab.", None],
             ["When smoothing out the graph, display a running average of", SettingsEdit('dampen_average'), "values", None]
         ]))
 
