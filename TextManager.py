@@ -19,18 +19,21 @@ from PyQt4.QtGui import *
 class SourceModel(AmphModel):
     def signature(self):
         self.hidden = 1
-        return (["Source", "Length", "Results", "WPM", "Dis."],
-                [None, None, None, "%.1f", None])
+        return (["Source", "Words", "Progress", "WPM", "Dis."],
+                [None, None, "%.1f%%", "%.1f", None])
 
     def populateData(self, idxs):
+        # FIXME: Seems like WPM should be recent/time-bound, instead of global avg
         if len(idxs) == 0:
             return map(list, DB.fetchall("""
-            select s.rowid,s.name,t.count,r.count,r.wpm,ifelse(nullif(t.dis,t.count),'No','Yes')
+            select s.rowid,s.name,r.total,100.0*r.seen/r.total,r.wpm,ifelse(nullif(r.total,r.dis),'No','Yes')
                     from source as s
-                    left join (select source,count(*) as count,count(disabled) as dis from text group by source) as t
-                        on (s.rowid = t.source)
-                    left join (select source,count(*) as count,avg(wpm) as wpm from result group by source) as r
-                        on (t.source = r.source)
+                    left join (select source, count(*) as total, count(wpm) as seen, avg(wpm) as wpm, count(disabled) as dis
+                               from text as t
+                               left join (select data, agg_median(12.0/time) as wpm from statistic group by data) as w
+                               on (t.text = w.data)
+                               group by source) as r
+                    on (s.rowid = r.source)
                     where s.disabled is null
                     order by s.name"""))
 
@@ -39,10 +42,10 @@ class SourceModel(AmphModel):
 
         r = self.rows[idxs[0]]
 
-        return map(list, DB.fetchall("""select t.rowid,substr(t.text,0,40)||"...",length(t.text),r.count,r.m,ifelse(t.disabled,'Yes','No')
+        return map(list, DB.fetchall("""select t.rowid,t.text,r.count as total,NULL as progress,r.wpm,ifelse(t.disabled,'Yes','No')
                 from (select rowid,* from text where source = ?) as t
-                left join (select text_id,count(*) as count,agg_median(wpm) as m from result group by text_id) as r
-                    on (t.id = r.text_id)
+                left join (select data,sum(count) as count,agg_median(12.0/time) as wpm from statistic group by data) as r
+                    on (t.text = r.data)
                 order by t.rowid""", (r[0], )))
 
 
