@@ -30,7 +30,7 @@ class ResultModel(AmphModel):
         self.source = None
         self.data_ = []
         self.hidden = 1
-        return (["When", "Source", "WPM", "Accuracy"],
+        return (["When", "Words", "WPM", "Accuracy"],
                 [self.formatWhen, None, "%.1f", "%.1f%%"])
 
     def populateData(self, idx):
@@ -82,7 +82,7 @@ class PerformanceHistory(QWidget):
         t.setUniformRowHeights(True)
         t.setRootIsDecorated(False)
         t.setIndentation(0)
-        self.connect(t, SIGNAL("doubleClicked(QModelIndex)"), self.doubleClicked)
+        #self.connect(t, SIGNAL("doubleClicked(QModelIndex)"), self.doubleClicked)
         self.connect(Settings, SIGNAL('change_graph_what'), self.updateGraph)
         self.connect(Settings, SIGNAL('change_show_xaxis'), self.updateGraph)
         self.connect(Settings, SIGNAL('change_chrono_x'), self.updateGraph)
@@ -92,10 +92,10 @@ class PerformanceHistory(QWidget):
                 ["Show", SettingsEdit("perf_items"), "items from",
                     self.cb_source,
                     "and group by", SettingsCombo('perf_group_by',
-                        ["<no grouping>", "%d sessions" % Settings.get('def_group_by'), "sitting", "day"]),
+                        ["minute", "sitting", "day", "week", "month"]),
                     None, AmphButton("Update", self.updateData)],
                 (t, 1),
-                ["Plot", SettingsCombo('graph_what', ((3, 'WPM'), (4, 'accuracy'), )),
+                ["Plot", SettingsCombo('graph_what', ((2, 'Words'), (3, 'WPM'), (4, 'accuracy'), )),
                     SettingsCheckBox("show_xaxis", "Show X-axis"),
                     SettingsCheckBox("chrono_x", "Use time-scaled X-axis"),
                     SettingsCheckBox("dampen_graph", "Dampen graph values"), None],
@@ -126,8 +126,6 @@ class PerformanceHistory(QWidget):
         self.editflag = True
         self.cb_source.clear()
         self.cb_source.addItem("<ALL>")
-        self.cb_source.addItem("<LAST TEXT>")
-        self.cb_source.addItem("<ALL TEXTS>")
 
         for id, v in DB.fetchall('select rowid,abbreviate(name,30) from source order by name'):
             self.cb_source.addItem(v, QVariant(id))
@@ -136,48 +134,34 @@ class PerformanceHistory(QWidget):
     def updateData(self, *args):
         if self.editflag:
             return
-        where = []
+
+        sql = '''select agg_first(r.data),avg(r.w) as w, sum(count) as num,
+            agg_median(12.0/r.time) as wpm,
+            100-100.0*sum(mistakes)/sum(count) as accuracy
+            from statistic as r
+            %s %s
+            order by w desc limit %d'''
+
         if self.cb_source.currentIndex() <= 0:
-            pass
-        elif self.cb_source.currentIndex() == 1: # last text
-            where.append('r.text_id = (select text_id from result order by w desc limit 1)')
-        elif self.cb_source.currentIndex() == 2: # all texts
-            pass
+            where = ''
         else:
             s = self.cb_source.itemData(self.cb_source.currentIndex())
-            where.append('r.source = %d' % s.toInt()[0])
-
-        if len(where) > 0:
-            where = 'where ' + ' and '.join(where)
-        else:
-            where = ""
+            where = 'join text as s on (r.data = s.text) where (s.source = %d)' % s.toInt()[0]
 
         g = Settings.get('perf_group_by')
-        if g == 0: # no grouping
-            sql = '''select text_id,w,s.name,wpm,100.0*accuracy
-                from result as r left join source as s on (r.source = s.rowid)
-                %s %s
-                order by w desc limit %d'''
-        elif g:
-            sql = '''select agg_first(text_id),avg(r.w) as w,count(r.rowid) || ' result(s)',agg_median(r.wpm),
-                        100.0*agg_median(r.accuracy)
-                from result as r left join source as s on (r.source = s.rowid)
-                %s %s
-                order by w desc limit %d'''
-
         group = ''
-        if g == 1: # by Settings.get('def_group_by')
-            DB.resetCounter()
-            gn = Settings.get('def_group_by')
-            if gn <= 1:
-                gn = 1
-            group = "group by cast(counter()/%d as int)" % gn
-        elif g == 2: # by sitting
+        if g == 0: # minute
+            group = "group by cast(r.w/60 as int)"
+        elif g == 1: # by sitting
             mis = Settings.get('minutes_in_sitting') * 60.0
             DB.resetTimeGroup()
             group = "group by time_group(%f, r.w)" % mis
-        elif g == 3: # by day
+        elif g == 2: # by day
             group = "group by cast((r.w+4*3600)/86400 as int)"
+        elif g == 3: # by week
+            group = "group by cast((r.w+4*3600)/604800 as int)"
+        elif g == 4: # by month (30 days)
+            group = "group by cast((r.w+4*3600)/2592000 as int)"
 
         n = Settings.get("perf_items")
 
@@ -188,10 +172,4 @@ class PerformanceHistory(QWidget):
 
     def doubleClicked(self, idx):
         r = self.model.rows[idx.row()]
-
-        v = DB.fetchone('select id,source,text from text where id = ?', None, (r[0], ))
-        if v == None:
-            return # silently ignore
-
-        self.emit(SIGNAL("setText"), v)
-        self.emit(SIGNAL("gotoText"))
+        return # silently ignore
