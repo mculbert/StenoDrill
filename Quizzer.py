@@ -141,18 +141,21 @@ class Typer(QTextEdit):
 class Quizzer(QWidget):
     def __init__(self, *args):
         super(Quizzer, self).__init__(*args)
+        
+        self.wpm_num = 0
+        self.wpm_denom = 0
+        self.acc_num = 0
+        self.acc_denom = 0
 
         self.result = QLabel()
         self.typer = Typer()
         self.label = WWLabel()
-        self.result.setVisible(Settings.get("show_last"))
         #self.label.setFrameStyle(QFrame.Raised | QFrame.StyledPanel)
         #self.typer.setBuddy(self.label)
         #self.info = QLabel()
         self.connect(self.typer,  SIGNAL("done"), self.done)
         self.connect(self.typer,  SIGNAL("cancel"), SIGNAL("wantText"))
         self.connect(Settings, SIGNAL("change_typer_font"), self.readjust)
-        self.connect(Settings, SIGNAL("change_show_last"), self.result.setVisible)
 
         self.text = ('','', 0, None)
 
@@ -188,10 +191,13 @@ class Quizzer(QWidget):
         DB.execute('insert into result (w,text_id,source,wpm,accuracy) values (?,?,?,?,?)',
                    (now, self.text[0], self.text[1], 12.0/spc, accuracy))
 
-        v2 = DB.fetchone("""select agg_median(wpm),agg_median(acc) from
-            (select wpm,100.0*accuracy as acc from result order by w desc limit %d)""" % Settings.get('def_group_by'), (0.0, 100.0))
-        self.result.setText("Last: %.1fwpm (%.1f%%), last 10 average: %.1fwpm (%.1f%%)"
-            % ((12.0/spc, 100.0*accuracy) + v2))
+        self.wpm_num += chars / 5.0
+        self.wpm_denom += elapsed / 60.
+        self.acc_num += chars - len(filter(None, mis))
+        self.acc_denom += chars
+        self.result.setText("Speed: %.1fwpm\tAccuracy: %.1f%%" %
+                            (self.wpm_num / self.wpm_denom,
+                             100. * self.acc_num / self.acc_denom))
 
         self.emit(SIGNAL("statsChanged"))
 

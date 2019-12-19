@@ -26,7 +26,6 @@ class AmphSettings(QSettings):
             "num_rand": 10,
             "graph_what": 3,
             "req_space": True,
-            "show_last": True,
             "show_xaxis": False,
             "chrono_x": False,
             "dampen_graph": False,
@@ -167,7 +166,6 @@ class PreferenceWidget(QWidget):
 
         self.setLayout(AmphBoxLayout([
             ["Typer font is", self.font_lbl, AmphButton("Change...", self.setFont), None],
-            SettingsCheckBox('show_last', "Show last result(s) above text in the Typer."),
             [SettingsCheckBox('req_space', "Make SPACE mandatory before each session"),
                 ('<a href="http://code.google.com/p/amphetype/wiki/Settings">(help)</a>\n', 1)],
             None,
