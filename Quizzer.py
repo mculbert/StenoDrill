@@ -142,11 +142,6 @@ class Quizzer(QWidget):
     def __init__(self, *args):
         super(Quizzer, self).__init__(*args)
         
-        self.wpm_num = 0
-        self.wpm_denom = 0
-        self.acc_num = 0
-        self.acc_denom = 0
-
         self.result = QLabel()
         self.typer = Typer()
         self.label = WWLabel()
@@ -154,7 +149,7 @@ class Quizzer(QWidget):
         #self.typer.setBuddy(self.label)
         #self.info = QLabel()
         self.connect(self.typer,  SIGNAL("done"), self.done)
-        self.connect(self.typer,  SIGNAL("cancel"), SIGNAL("wantText"))
+        self.connect(self.typer,  SIGNAL("cancel"), self.resetStats)
         self.connect(Settings, SIGNAL("change_typer_font"), self.readjust)
 
         self.text = ('','', 0, None)
@@ -167,7 +162,15 @@ class Quizzer(QWidget):
         layout.addWidget(self.typer, 1)
         self.setLayout(layout)
         self.readjust()
+        self.resetStats()
 
+    def resetStats(self):
+        self.wpm_num = 0
+        self.wpm_denom = 0
+        self.acc_num = 0
+        self.acc_denom = 0
+        self.result.setText('')
+    
     def readjust(self):
         f = Settings.getFont("typer_font")
         self.label.setFont(f)
