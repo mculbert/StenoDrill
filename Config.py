@@ -25,18 +25,12 @@ class AmphSettings(QSettings):
             "db_name": _dbname,
             "num_rand": 10,
             "graph_what": 3,
-            "req_space": True,
             "show_xaxis": False,
             "chrono_x": False,
             "dampen_graph": False,
 
             "minutes_in_sitting": 60.0,
             "dampen_average": 10,
-
-            "quiz_right_fg": "#000000",
-            "quiz_right_bg": "#ffffff",
-            "quiz_wrong_fg": "#ffffff",
-            "quiz_wrong_bg": "#000000",
 
             "group_month": 365.0,
             "group_week": 30.0,
@@ -165,18 +159,6 @@ class PreferenceWidget(QWidget):
 
         self.setLayout(AmphBoxLayout([
             ["Typer font is", self.font_lbl, AmphButton("Change...", self.setFont), None],
-            [SettingsCheckBox('req_space', "Make SPACE mandatory before each session"),
-                ('<a href="http://code.google.com/p/amphetype/wiki/Settings">(help)</a>\n', 1)],
-            None,
-            [AmphGridLayout([
-                ["INPUT COLORS", "Text Color", "Background"],
-                ["Correct Input", SettingsColor('quiz_right_fg', "Foreground"),
-                        SettingsColor('quiz_right_bg', "Background")],
-                ["Wrong Input", SettingsColor('quiz_wrong_fg', "Foreground"),
-                        SettingsColor('quiz_wrong_bg', "Background")],
-                [1+1j,1+2j,2+1j,2+2j]
-            ]), None],
-            None,
             ["Data is considered too old to be included in analysis after",
                 SettingsEdit("history"), "days.", None],
             ["Show", SettingsEdit('num_rand'), "words at a time.", None],

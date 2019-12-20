@@ -52,10 +52,6 @@ class SourceModel(AmphModel):
 
 class TextManager(QWidget):
 
-    defaultText = ("", 0, """Welcome to Amphetype!
-A typing program that not only measures your speed and progress, but also gives you detailed statistics about problem keys, words, common mistakes, and so on. This is just a default text since your database is empty. You might import a novel or text of your choosing and text excerpts will be generated for you automatically. There are also some facilities to generate lessons based on your past statistics! But for now, go to the "Sources" tab and try adding some texts from the "txt" directory.""")
-
-
     def __init__(self, *args):
         super(TextManager, self).__init__(*args)
 
@@ -134,15 +130,13 @@ A typing program that not only measures your speed and progress, but also gives 
         self.emit(SIGNAL("refreshSources"))
         self.model.reset()
 
-    def nextText(self):
+    def genWords(self):
         num_words = Settings.get('num_rand')
         # Fetch random words
         v = DB.execute("select id,source,text from text where disabled is null order by random() limit %d" % num_words).fetchall()
-        if len(v) == 0:
-            v = self.defaultText
-        else:
-            v = ('', 0, ' '.join([ row[2] for row in v ]))
-        self.emit(SIGNAL("setText"), v)
+        if len(v) > 0 :
+            v = [ row[2] for row in v ]
+            self.emit(SIGNAL("addWords"), v)
 
     def removeDisabled(self):
         # FIXME

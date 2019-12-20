@@ -43,15 +43,13 @@ class TyperWindow(QMainWindow):
         tabs.addTab(quiz, "Typer")
 
         tm = TextManager()
-        self.connect(quiz, SIGNAL("wantText"), tm.nextText)
-        self.connect(tm, SIGNAL("setText"), quiz.setText)
-        self.connect(tm, SIGNAL("gotoText"), lambda: tabs.setCurrentIndex(0))
+        self.connect(quiz, SIGNAL("wantWords"), tm.genWords)
+        self.connect(tm, SIGNAL('addWords'), quiz.addWords)
         tabs.addTab(tm, "Sources")
 
         ph = PerformanceHistory()
         self.connect(tm, SIGNAL("refreshSources"), ph.refreshSources)
-        self.connect(quiz, SIGNAL("statsChanged"), ph.updateData)
-        self.connect(ph, SIGNAL("setText"), quiz.setText)
+        #self.connect(quiz, SIGNAL("statsChanged"), ph.updateData)
         self.connect(ph, SIGNAL("gotoText"), lambda: tabs.setCurrentIndex(0))
         tabs.addTab(ph, "Performance")
 
@@ -69,7 +67,7 @@ class TyperWindow(QMainWindow):
 
         self.setCentralWidget(tabs)
 
-        tm.nextText()
+        quiz.nextWord()
 
     def sizeHint(self):
         return QSize(650, 400)
