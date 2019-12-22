@@ -2,19 +2,47 @@
 from __future__ import with_statement
 
 import cPickle
+from Data import DB
 from QtUtil import *
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import getpass
 
-try:
-    _dbname = getpass.getuser() or "typer"
-    if '.' not in _dbname:
-        _dbname += '.db'
-except:
-    _dbname = "typer.db"
+class AmphSetting(QObject):
+    
+    def __init__(self, name):
+        super(AmphSetting, self).__init__()
+        self.name = name
+        # Check database for setting value
+        value = DB.fetchall('''select value from settings where name = ?''', (name,))
+        if (len(value) > 0):
+            # Load value from database
+            self.value = cPickle.loads(str(value[0][0]))
+            self.in_db = True
+        elif AmphSettings.defaults.has_key(name):
+            # Use default value
+            self.value = AmphSettings.defaults[name]
+            self.in_db = False
+        else:
+            # Error: No such setting
+            raise KeyError(name)
+    
+    def get(self):
+        return self.value
+    
+    def set(self, value):
+        if self.value == value: return
+        self.value = value
+        if self.in_db:
+            DB.execute('''update settings set value = ? where name = ?''',
+                       (cPickle.dumps(value), self.name))
+        else:
+            DB.execute('''insert into settings (name,value) values (?,?)''',
+                       (self.name, cPickle.dumps(value)))
+            self.in_db = True
+        self.emit(SIGNAL("change"), value)
 
-class AmphSettings(QSettings):
+
+class AmphSettings(QObject):
 
     defaults = {
             "typer_font": str(QFont("Arial", 14).toString()),
@@ -22,7 +50,6 @@ class AmphSettings(QSettings):
             "perf_group_by": 0,
             "perf_items": 100,
             "text_regex": r"",
-            "db_name": _dbname,
             "num_rand": 10,
             "graph_what": 3,
             "show_xaxis": False,
@@ -48,15 +75,18 @@ class AmphSettings(QSettings):
             "str_extra": 10,
             "str_what": 'e'
         }
-
-    def __init__(self, *args):
-        super(AmphSettings, self).__init__(QSettings.IniFormat, QSettings.UserScope, "Amphetype", "Amphetype")
-
+        
+    def __init__(self):
+        super(AmphSettings, self).__init__()
+        self.cache = {}
+    
+    def __getitem__(self, k):
+        if not self.cache.has_key(k):
+            self.cache[k] = AmphSetting(k)
+        return self.cache[k]
+    
     def get(self, k):
-        v = self.value(k)
-        if not v.isValid():
-            return self.defaults[k]
-        return cPickle.loads(str(v.toString()))
+        return self[k].get()
 
     def getFont(self, k):
         qf = QFont()
@@ -70,7 +100,7 @@ class AmphSettings(QSettings):
         p = self.get(k)
         if p == v:
             return
-        self.setValue(k, QVariant(cPickle.dumps(v)))
+        self[k].set(v)
         self.emit(SIGNAL("change"))
         self.emit(SIGNAL("change_" + k), v)
 

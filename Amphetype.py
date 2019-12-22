@@ -4,20 +4,27 @@ from __future__ import with_statement, division
 import os
 import sys
 
-
 # Get command-line --database argument before importing
 # modules which count on database support
-from Config import Settings
-
 import optparse
 opts = optparse.OptionParser()
 opts.add_option("-d", "--database", metavar="FILE", help="use database FILE")
 v = opts.parse_args()[0]
 
-if v.database is not None:
-    Settings.set('db_name', v.database)
+dbname = v.database
+if dbname is None:
+    import getpass
+    try:
+        dbname = getpass.getuser() or "StenoDrill"
+        dbname += '.db'
+    except:
+        dbname = "StenoDrill.db"
+
+import Data
+Data.load_db(dbname)
 
 from Data import DB
+from Config import Settings
 from Quizzer import Quizzer
 from StatWidgets import StringStats
 from TextManager import TextManager

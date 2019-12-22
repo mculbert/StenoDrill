@@ -7,7 +7,7 @@ from QtUtil import *
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from Config import *
-from Data import DB
+from Data import DB, dbname
 import time
 import locale
 locale.setlocale(locale.LC_ALL, '')
@@ -32,16 +32,12 @@ class DatabaseWidget(QWidget):
     def __init__(self, *args):
         super(DatabaseWidget, self).__init__(*args)
 
-        self.connect(self, SIGNAL("change_db_name"), self.dbchange)
-
         self.stats_ = QLabel("\nPress Update to fetch database statistics\n")
         self.progress_ = IncrementalProgress(6+2)
 
         self.setLayout(AmphBoxLayout([
                 [AmphButton("Update", self.update), 150,
-                    ([["Current database:", SettingsEdit("db_name")],
-                    ["For the database change to take effect you need to restart Amphetype. You can also specify a database name at the command line with the '--database=&lt;file&gt;' switch.\n"]
-                    ], 1)
+                    (["Current database:", QLabel(dbname)], 1)
                 ], #AmphButton("Import", self.importdb), "external DB file"]]],
                 self.stats_,
                 None,
@@ -74,10 +70,6 @@ class DatabaseWidget(QWidget):
 Trials: %d
 First result was %.2f days ago.\n''',
   (n_seen, n_words, 100.0*n_seen/n_words, n_trials, (time.time()-n_first)/86400.0)))
-
-    def dbchange(self, nn):
-        #DB.switchdb(nn)
-        pass
 
     def cleanup(self):
         day = 24*60*60

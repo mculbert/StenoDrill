@@ -9,7 +9,6 @@ import time
 import bisect
 import sqlite3
 import re
-from Config import Settings
 
 
 def trimmed_average(total, series):
@@ -122,7 +121,7 @@ class AmphDatabase(sqlite3.Connection):
         self.create_function("ifelse", 3, lambda x, y, z: y if x is not None else z)
 
         try:
-            self.fetchall("select * from source,statistic,text limit 1")
+            self.fetchall("select * from settings,source,statistic,text limit 1")
         except:
             self.newDB()
 
@@ -157,6 +156,7 @@ class AmphDatabase(sqlite3.Connection):
 
     def newDB(self):
         self.executescript("""
+create table settings (name text primary key, value text);
 create table source (name text, disabled integer);
 create table text (id text primary key, source integer, text text, disabled integer);
 create table statistic (w real, data text, time real, count integer, mistakes integer);
@@ -193,20 +193,21 @@ create view text_source as
 
 
 
-dbname = Settings.get("db_name")
-
 # GLOBAL
-DB = sqlite3.connect(dbname,5,0,"DEFERRED",False,AmphDatabase)
+DB = None
+dbname = ''
 
-def switchdb(nn):
-    global DB
-    DB.commit()
+def load_db(new_db):
+    global DB, dbname
+    if DB is not None:
+        DB.commit()
     try:
-        nDB = sqlite3.connect(nn,5,0,"DEFERRED",False,AmphDatabase)
+        nDB = sqlite3.connect(new_db,5,0,"DEFERRED",False,AmphDatabase)
         DB = nDB
+        dbname = new_db
     except Exception, e:
         from PyQt4.QtGui import QMessageBox as qmb
-        qmb.information(None, "Database Error", "Failed to switch to the new database:\n" + str(e))
+        qmb.information(None, "Database Error", "Failed to load database:\n" + str(e))
 
 
 
