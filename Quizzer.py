@@ -8,6 +8,7 @@ import platform
 import collections
 import time
 import re
+import random
 
 from Data import Statistic, DB
 from Config import Settings
@@ -121,9 +122,21 @@ class Quizzer(QWidget):
     
     def addWords(self):
         num_words = Settings.get('num_rand')
-        # Fetch random words
-        words = DB.execute("select * from active_words order by random() limit %d" % num_words).fetchall()
-        if len(words) > 0 :
+        # Fetch random words, weighted by (mpw * (1+err_rate))^3
+        dist = DB.execute('''select w.id, w.word, pow(mpw * (1+err_rate), 3) as priority
+            from active_words as w left join word_status as s on (w.id = s.word)
+            order by priority asc''').fetchall()
+        if len(dist) > 0 :
+            avg_priority = 0
+            count = 0
+            for priority in [ row[2] for row in dist]:
+                if priority is not None:
+                    avg_priority += priority
+                    count += 1
+            avg_priority = avg_priority / count if count > 0 else 1000.
+            words = random.choices(dist, k = num_words,
+                weights = [ (row[2] if row[2] is not None else avg_priority)
+                            for row in dist ])
             self.word_queue = words + self.word_queue
 
     def nextWord(self):
