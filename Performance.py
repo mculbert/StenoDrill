@@ -76,17 +76,17 @@ class PerformanceHistory(QWidget):
 
         self.cb_source = QComboBox()
         self.refreshSources()
-        self.connect(self.cb_source, SIGNAL("currentIndexChanged(int)"), self.updateData)
+        self.cb_source.currentIndexChanged.connect(self.updateData)
 
         t = AmphTree(self.model)
         t.setUniformRowHeights(True)
         t.setRootIsDecorated(False)
         t.setIndentation(0)
-        #self.connect(t, SIGNAL("doubleClicked(QModelIndex)"), self.doubleClicked)
-        self.connect(Settings, SIGNAL('change_graph_what'), self.updateGraph)
-        self.connect(Settings, SIGNAL('change_show_xaxis'), self.updateGraph)
-        self.connect(Settings, SIGNAL('change_chrono_x'), self.updateGraph)
-        self.connect(Settings, SIGNAL("change_dampen_graph"), self.updateGraph)
+        #t.doubleClicked.connect(self.doubleClicked)
+        Settings['graph_what'].change.connect(self.updateGraph)
+        Settings['show_xaxis'].change.connect(self.updateGraph)
+        Settings['chrono_x'].change.connect(self.updateGraph)
+        Settings['dampen_graph'].change.connect(self.updateGraph)
 
         self.setLayout(AmphBoxLayout([
                 ["Show", SettingsEdit("perf_items"), "items from",
@@ -102,8 +102,8 @@ class PerformanceHistory(QWidget):
                 (self.plot, 1)
             ]))
 
-        self.connect(Settings, SIGNAL("change_perf_items"), self.updateData)
-        self.connect(Settings, SIGNAL("change_perf_group_by"), self.updateData)
+        Settings['perf_items'].change.connect(self.updateData)
+        Settings['perf_group_by'].change.connect(self.updateData)
 
     def updateGraph(self):
         pc = Settings.get('graph_what')

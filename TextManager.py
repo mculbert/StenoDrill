@@ -13,7 +13,7 @@ from Config import *
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-
+from PyQt4.QtCore import pyqtSignal as Signal
 
 
 class SourceModel(AmphModel):
@@ -52,6 +52,9 @@ class SourceModel(AmphModel):
 
 class TextManager(QWidget):
 
+    refreshSources = Signal()
+    addWords = Signal(list)
+
     def __init__(self, *args):
         super(TextManager, self).__init__(*args)
 
@@ -59,7 +62,7 @@ class TextManager(QWidget):
         tv = AmphTree(self.model)
         tv.resizeColumnToContents(1)
         tv.setColumnWidth(0, 300)
-        self.connect(tv, SIGNAL("doubleClicked(QModelIndex)"), self.doubleClicked)
+        tv.doubleClicked.connect(self.doubleClicked)
         self.tree = tv
 
         self.progress = QProgressBar()
@@ -88,7 +91,7 @@ class TextManager(QWidget):
         qf.setFileMode(QFileDialog.ExistingFiles)
         qf.setAcceptMode(QFileDialog.AcceptOpen)
 
-        self.connect(qf, SIGNAL("filesSelected(QStringList)"), self.setImpList)
+        qf.filesSelected.connect(self.setImpList)
 
         qf.show()
 
@@ -102,7 +105,7 @@ class TextManager(QWidget):
             #  optionally tab delimited with stroke following
             words = [ line.split('\t')[0].strip() for line in
                        codecs.open(x, "r", "utf_8_sig") ]
-            #self.connect(lm, SIGNAL("progress(int)"), self.progress.setValue)
+            #lm.progress(self.progress.setValue)
             self.addTexts(fname, words, update=False)
 
         #self.progress.hide()
@@ -127,7 +130,7 @@ class TextManager(QWidget):
         return r
 
     def update(self):
-        self.emit(SIGNAL("refreshSources"))
+        self.refreshSources.emit()
         self.model.reset()
 
     def genWords(self):
@@ -136,7 +139,7 @@ class TextManager(QWidget):
         v = DB.execute("select id,source,text from text where disabled is null order by random() limit %d" % num_words).fetchall()
         if len(v) > 0 :
             v = [ row[2] for row in v ]
-            self.emit(SIGNAL("addWords"), v)
+            self.addWords.emit(v)
 
     def removeDisabled(self):
         # FIXME
@@ -178,10 +181,6 @@ class TextManager(QWidget):
 
         q = self.model.data(idx, Qt.UserRole)
         v = DB.fetchall('select id,source,text from text where rowid = ?', (q[0], ))
-
-        self.cur = v[0] if len(v) > 0 else self.defaultText
-        self.emit(SIGNAL("setText"), self.cur)
-        self.emit(SIGNAL("gotoText"))
 
 
 

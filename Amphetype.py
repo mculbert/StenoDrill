@@ -50,14 +50,13 @@ class TyperWindow(QMainWindow):
         tabs.addTab(quiz, "Typer")
 
         tm = TextManager()
-        self.connect(quiz, SIGNAL("wantWords"), tm.genWords)
-        self.connect(tm, SIGNAL('addWords'), quiz.addWords)
+        quiz.wantWords.connect(tm.genWords)
+        tm.addWords.connect(quiz.addWords)
         tabs.addTab(tm, "Sources")
 
         ph = PerformanceHistory()
-        self.connect(tm, SIGNAL("refreshSources"), ph.refreshSources)
-        #self.connect(quiz, SIGNAL("statsChanged"), ph.updateData)
-        self.connect(ph, SIGNAL("gotoText"), lambda: tabs.setCurrentIndex(0))
+        tm.refreshSources.connect(ph.refreshSources)
+        #quiz.statsChanged.connect(ph.updateData)
         tabs.addTab(ph, "Performance")
 
         st = StringStats()

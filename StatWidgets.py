@@ -53,10 +53,10 @@ class StringStats(QWidget):
         lim = SettingsEdit('ana_many')
         self.w_count = SettingsEdit('ana_count')
 
-        self.connect(Settings, SIGNAL("change_ana_which"), self.update)
-        self.connect(Settings, SIGNAL("change_ana_many"), self.update)
-        self.connect(Settings, SIGNAL("change_ana_count"), self.update)
-        self.connect(Settings, SIGNAL("history"), self.update)
+        Settings['ana_which'].change.connect(self.update)
+        Settings['ana_many'].change.connect(self.update)
+        Settings['ana_count'].change.connect(self.update)
+        Settings['history'].change.connect(self.update)
 
         self.setLayout(AmphBoxLayout([
                 ["Display statistics about the", ob, "words", None, AmphButton("Update List", self.update)],

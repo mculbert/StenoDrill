@@ -6,8 +6,11 @@ from Data import DB
 from QtUtil import *
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+from PyQt4.QtCore import pyqtSignal as Signal
 
 class AmphSetting(QObject):
+
+    change = Signal()
     
     def __init__(self, name):
         super(AmphSetting, self).__init__()
@@ -39,7 +42,7 @@ class AmphSetting(QObject):
             DB.execute('''insert into settings (name,value) values (?,?)''',
                        (self.name, cPickle.dumps(value)))
             self.in_db = True
-        self.emit(SIGNAL("change"), value)
+        self.change.emit()
 
 
 class AmphSettings(QObject):
@@ -101,8 +104,6 @@ class AmphSettings(QObject):
         if p == v:
             return
         self[k].set(v)
-        self.emit(SIGNAL("change"))
-        self.emit(SIGNAL("change_" + k), v)
 
 
 
@@ -133,7 +134,8 @@ class SettingsColor(AmphButton):
 
 class SettingsEdit(AmphEdit):
     def __init__(self, setting):
-        val = Settings.get(setting)
+        sttg = Settings[setting]
+        val = sttg.get()
         typ = type(val)
         validator = None
         if isinstance(val, float):
@@ -148,14 +150,15 @@ class SettingsEdit(AmphEdit):
                             self.fmt(val),
                             lambda: Settings.set(setting, typ(self.text())),
                             validator=validator)
-        self.connect(Settings, SIGNAL("change_" + setting), lambda x: self.setText(self.fmt(x)))
+        sttg.change.connect(lambda : self.setText(str(sttg.get())) )
 
 
 class SettingsCombo(QComboBox):
     def __init__(self, setting, lst, *args):
         super(SettingsCombo, self).__init__(*args)
 
-        prev = Settings.get(setting)
+        sttg = Settings[setting]
+        prev = sttg.get()
         self.idx2item = []
         for i in range(len(lst)):
             if isinstance(lst[i], basestring):
@@ -168,18 +171,14 @@ class SettingsCombo(QComboBox):
             if k == prev:
                 self.setCurrentIndex(i)
 
-        self.connect(self, SIGNAL("activated(int)"),
-                    lambda x: Settings.set(setting, self.idx2item[x]))
-
-        #self.connect(Settings, SIGNAL("change_" + setting),
-        #            lambda x: self.setCurrentIndex(self.item2idx[x]))
+        self.activated.connect(lambda x: sttg.set(self.idx2item[x]))
 
 class SettingsCheckBox(QCheckBox):
     def __init__(self, setting, *args):
         super(SettingsCheckBox, self).__init__(*args)
-        self.setCheckState(Qt.Checked if Settings.get(setting) else Qt.Unchecked)
-        self.connect(self, SIGNAL("stateChanged(int)"),
-                    lambda x: Settings.set(setting, True if x == Qt.Checked else False))
+        sttg = Settings[setting]
+        self.setCheckState(Qt.Checked if sttg.get() else Qt.Unchecked)
+        self.stateChanged.connect(lambda x: sttg.set(x == Qt.Checked))
 
 class PreferenceWidget(QWidget):
     def __init__(self):

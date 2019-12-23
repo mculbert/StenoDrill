@@ -133,7 +133,7 @@ class AmphTree(QTreeView):
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         #self.setExpandsOnDoubleClick(False)
         self.header().setClickable(True)
-        self.connect(self.header(), SIGNAL("sectionClicked(int)"), self.sortByColumn)
+        self.header().sectionClicked.connect(self.sortByColumn)
 
 
 class AmphBoxLayout(QBoxLayout):
@@ -215,13 +215,13 @@ class AmphGridLayout(QGridLayout):
 class AmphButton(QPushButton):
     def __init__(self, text, callback, *args):
         super(AmphButton, self).__init__(text, *args)
-        self.connect(self, SIGNAL("clicked()"), callback)
+        self.clicked.connect(callback)
 
 class AmphEdit(QLineEdit):
     def __init__(self, text, callback, validator=None):
         super(AmphEdit, self).__init__(text)
         if validator is not None:
             self.setValidator(validator(self))
-        self.connect(self, SIGNAL("editingFinished()"), callback)
+        self.editingFinished.connect(callback)
 
 

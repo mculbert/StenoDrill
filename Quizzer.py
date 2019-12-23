@@ -14,6 +14,7 @@ from Config import Settings
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+from PyQt4.QtCore import pyqtSignal as Signal
 from QtUtil import *
 
 
@@ -26,10 +27,14 @@ else:
 
 
 class Typer(QTextEdit):
+
+    cancel = Signal()
+    done = Signal()
+    
     def __init__(self, *args):
         super(Typer, self).__init__(*args)
 
-        self.connect(self, SIGNAL("textChanged()"), self.checkText)
+        self.textChanged.connect(self.checkText)
         #self.setLineWrapMode(QTextEdit.NoWrap)
         self.target = None
 
@@ -38,7 +43,7 @@ class Typer(QTextEdit):
 
     def keyPressEvent(self, e):
         if e.key() == Qt.Key_Escape:
-            self.emit(SIGNAL("cancel"))
+            self.cancel.emit()
         return QTextEdit.keyPressEvent(self, e)
 
     def setTarget(self,  text):
@@ -61,7 +66,7 @@ class Typer(QTextEdit):
         
         entered_text = self.toPlainText().trimmed()
         if entered_text == self.target :
-          self.emit(SIGNAL('done'))
+          self.done.emit()
         else :
           entered_chars = len(entered_text)
           if (entered_chars > len(self.target) or
@@ -72,6 +77,9 @@ class Typer(QTextEdit):
         return self.target, (self.stroke_time - self.start_time), self.mistroke
 
 class Quizzer(QWidget):
+
+    wantWords = Signal()
+
     def __init__(self, *args):
         super(Quizzer, self).__init__(*args)
         
@@ -81,9 +89,9 @@ class Quizzer(QWidget):
         #self.label.setFrameStyle(QFrame.Raised | QFrame.StyledPanel)
         #self.typer.setBuddy(self.label)
         #self.info = QLabel()
-        self.connect(self.typer,  SIGNAL("done"), self.done)
-        self.connect(self.typer,  SIGNAL("cancel"), self.resetStats)
-        self.connect(Settings, SIGNAL("change_typer_font"), self.readjust)
+        self.typer.done.connect(self.done)
+        self.typer.cancel.connect(self.resetStats)
+        Settings['typer_font'].change.connect(self.readjust)
 
         self.word_queue = []
 
@@ -116,7 +124,7 @@ class Quizzer(QWidget):
     def nextWord(self):
         num_show = Settings.get('num_rand')
         if len(self.word_queue) < num_show :
-            self.emit(SIGNAL('wantWords'))
+            self.wantWords.emit()
         if len(self.word_queue) == 0 :
             # No words available. Use placeholder text.
             self.label.setText("""Welcome to StenoDrill!\nA program that not only measures your speed and progress, but also helps you drill the briefs that holding you back the most. This is just a default text since your database is empty. Add lists of words to drill on the "Sources" tab. Then hit the escape key (ESC) to start your drill.""")
