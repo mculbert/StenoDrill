@@ -80,6 +80,11 @@ class MedianAggregate(Statistic):
     def finalize(self):
         return self.median()
 
+class MedianAggregateFirstN(MedianAggregate):
+    def step(self, val, N):
+        if len(self) < N:
+            self.append(val)
+
 class MeanAggregate(object):
     def __init__(self):
         self.sum_ = 0.0
@@ -92,16 +97,41 @@ class MeanAggregate(object):
     def finalize(self):
         return self.sum_ / self.count_
 
+class MeanAggregateFirstN(MeanAggregate):
+    def __init__(self):
+        self.sum_ = 0.0
+        self.count_ = 0
+        self.steps_ = 0
+        
+    def step(self, val, count, N):
+        if self.steps_ < N:
+            self.sum += value * count
+            self.count_ += count
+            self.steps_ += 1
+
 class FirstAggregate(object):
     def __init__(self):
         self.val = None
 
     def step(self, val):
-        if self.val is not None:
+        if self.val is None:
             self.val = val
 
     def finalize(self):
         return self.val
+
+class SumFirstN(object):
+    def __init__(self):
+        self.sum_ = 0.0
+        self.steps_ = 0
+
+    def step(self, value, N):
+        if self.steps_ < N:
+            self.sum_ += value
+            self.steps_ += 1
+
+    def finalize(self):
+        return self.sum_
 
 
 class AmphDatabase(sqlite3.Connection):
@@ -118,6 +148,9 @@ class AmphDatabase(sqlite3.Connection):
         self.create_aggregate("agg_median", 1, MedianAggregate)
         self.create_aggregate("agg_mean", 2, MeanAggregate)
         self.create_aggregate("agg_first", 1, FirstAggregate)
+        self.create_aggregate("agg_median_firstN", 2, MedianAggregateFirstN)
+        self.create_aggregate("agg_mean_firstN", 3, MeanAggregateFirstN)
+        self.create_aggregate("agg_sum_firstN", 2, SumFirstN)
         #self.create_aggregate("agg_trimavg", 2, TrimmedAverarge)
         self.create_function("ifelse", 3, lambda x, y, z: y if x else z)
 
@@ -168,6 +201,9 @@ create view active_words as
     join source_words as sw on (s.rowid = sw.source)
     join words as w on (sw.word = w.rowid)
     where s.active = 1 and w.active = 1;
+create view word_status as
+    select word,agg_median_firstN(mpw, 10) as mpw,agg_sum_firstN(mistakes, 10)/agg_sum_firstN(count, 10) as err_rate
+    from (select * from statistic order by w desc) group by word;
         """)
         self.commit()
 
