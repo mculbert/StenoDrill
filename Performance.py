@@ -127,7 +127,7 @@ class PerformanceHistory(QWidget):
         self.cb_source.clear()
         self.cb_source.addItem("<ALL>")
 
-        for id, v in DB.fetchall('select rowid,abbreviate(name,30) from source order by name'):
+        for id, v in DB.fetchall('select rowid,abbreviate(name,30) from sources order by name'):
             self.cb_source.addItem(v, QVariant(id))
         self.editflag = False
 
@@ -135,8 +135,8 @@ class PerformanceHistory(QWidget):
         if self.editflag:
             return
 
-        sql = '''select agg_first(r.data),avg(r.w) as w, sum(count) as num,
-            agg_median(12.0/r.time) as wpm,
+        sql = '''select agg_first(r.word),avg(r.w) as w, sum(count) as num,
+            1.0/agg_median(r.mpw) as wpm,
             100-100.0*sum(mistakes)/sum(count) as accuracy
             from statistic as r
             %s %s
@@ -146,7 +146,7 @@ class PerformanceHistory(QWidget):
             where = ''
         else:
             s = self.cb_source.itemData(self.cb_source.currentIndex())
-            where = 'join text as s on (r.data = s.text) where (s.source = %d)' % s
+            where = 'join source_words as s on (r.word = s.word) where (s.source = %d)' % s
 
         g = Settings.get('perf_group_by')
         group = ''

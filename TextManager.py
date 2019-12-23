@@ -19,22 +19,22 @@ from PyQt5.QtCore import pyqtSignal as Signal
 class SourceModel(AmphModel):
     def signature(self):
         self.hidden = 1
-        return (["Source", "Words", "Progress", "WPM", "Dis."],
+        return (["Source", "Words", "Progress", "WPM", "Act."],
                 [None, None, "%.1f%%", "%.1f", None])
 
     def populateData(self, idxs):
         # FIXME: Seems like WPM should be recent/time-bound, instead of global avg
         if len(idxs) == 0:
             return list(map(list, DB.fetchall("""
-            select s.rowid,s.name,r.total,100.0*r.seen/r.total,r.wpm,ifelse(nullif(r.total,r.dis),'No','Yes')
-                    from source as s
-                    left join (select source, count(*) as total, count(wpm) as seen, avg(wpm) as wpm, count(disabled) as dis
-                               from text as t
-                               left join (select data, agg_median(12.0/time) as wpm from statistic group by data) as w
-                               on (t.text = w.data)
+            select s.rowid,s.name,r.total,100.0*r.seen/r.total,r.wpm,ifelse(s.active,'Y','N')
+                    from sources as s
+                    left join (select source, count(*) as total, count(wpm) as seen, avg(wpm) as wpm
+                               from source_words as sw
+                               left join (select word, 1.0/agg_median(mpw) as wpm from statistic group by word) as ss
+                               on (sw.word = ss.word)
                                group by source) as r
                     on (s.rowid = r.source)
-                    where s.disabled is null
+                    where s.active = 1
                     order by s.name""")))
 
         if len(idxs) > 1:
@@ -42,11 +42,12 @@ class SourceModel(AmphModel):
 
         r = self.rows[idxs[0]]
 
-        return list(map(list, DB.fetchall("""select t.rowid,t.text,r.count as total,NULL as progress,r.wpm,ifelse(t.disabled,'Yes','No')
-                from (select rowid,* from text where source = ?) as t
-                left join (select data,sum(count) as count,agg_median(12.0/time) as wpm from statistic group by data) as r
-                    on (t.text = r.data)
-                order by t.rowid""", (r[0], ))))
+        return list(map(list, DB.fetchall("""select w.rowid,w.word,r.count as total,NULL as progress,r.wpm,ifelse(w.active,'Y','N')
+                from (select * from source_words where source = ?) as sw
+                join words as w on (sw.word = w.rowid)
+                left join (select word, sum(count) as count, 1.0/agg_median(mpw) as wpm from statistic group by word) as r
+                    on (w.rowid = r.word)
+                order by w.rowid""", (r[0], ))))
 
 
 
@@ -90,43 +91,37 @@ class TextManager(QWidget):
         qf.setFileMode(QFileDialog.ExistingFiles)
         qf.setAcceptMode(QFileDialog.AcceptOpen)
 
-        qf.filesSelected.connect(self.setImpList)
+        qf.filesSelected.connect(self.importFiles)
 
         qf.show()
 
-    def setImpList(self, files):
+    def importFiles(self, files):
         self.sender().hide()
-        #self.progress.show()
         for x in files:
-            #self.progress.setValue(0)
             fname = path.basename(x)
             # Import one word per line,
             #  optionally tab delimited with stroke following
             words = [ line.split('\t')[0].strip() for line in
                        codecs.open(x, "r", "utf_8_sig") ]
-            #lm.progress(self.progress.setValue)
-            self.addTexts(fname, words, update=False)
+            # Get new source id
+            DB.execute("insert into sources (name,active) values (?,1)", (fname,))
+            source_id = DB.fetchall("select rowid from sources where name = ?", (fname,))[0][0]
+            # Get existing words
+            cur_words = {}
+            for (word,) in DB.fetchall("select word from words"):
+                cur_words[word] = None
+            # Insert new words
+            DB.executemany("insert into words (word,active) values (?,1)",
+                           map(lambda x: (x,), filter(lambda x: x not in cur_words, words)))
+            # Fetch word ids
+            for (word,word_id) in DB.fetchall("select word,rowid from words"):
+                cur_words[word] = word_id
+            # Link words to source
+            DB.executemany("insert into source_words (source,word) values (%d,?)" % source_id,
+                           map(lambda x: (cur_words[x],), words))
 
-        #self.progress.hide()
         self.update()
         DB.commit()
-
-    def addTexts(self, source, texts, update=True):
-        id = DB.getSource(source)
-        r = []
-        for x in texts:
-            h = hashlib.sha1()
-            h.update(x.encode('utf-8'))
-            txt_id = h.hexdigest()
-            try:
-                DB.execute("insert into text (id,text,source,disabled) values (?,?,?,?)",
-                           (txt_id, x, id, None))
-                r.append(txt_id)
-            except Exception as e:
-                pass # silently skip ...
-        if update:
-            self.update()
-        return r
 
     def update(self):
         self.refreshSources.emit()
@@ -135,9 +130,8 @@ class TextManager(QWidget):
     def genWords(self):
         num_words = Settings.get('num_rand')
         # Fetch random words
-        v = DB.execute("select id,source,text from text where disabled is null order by random() limit %d" % num_words).fetchall()
+        v = DB.execute("select * from active_words order by random() limit %d" % num_words).fetchall()
         if len(v) > 0 :
-            v = [ row[2] for row in v ]
             self.addWords.emit(v)
 
     def removeDisabled(self):
@@ -147,31 +141,30 @@ class TextManager(QWidget):
         #DB.commit()
 
     def enableAll(self):
-        DB.execute('update text set disabled = null where disabled is not null')
+        DB.execute('update sources set active = 1')
+        DB.execute('update words set active = 1')
         self.update()
 
     def disableSelected(self):
-        cats, texts = self.getSelected()
-        DB.setRegex(Settings.get('text_regex'))
-        DB.executemany("""update text set disabled = ifelse(disabled,NULL,1)
-                where rowid = ? and regex_match(text) = 1""",
-                       map(lambda x:(x, ), texts))
-        DB.executemany("""update text set disabled = ifelse(disabled,NULL,1)
-                where source = ? and regex_match(text) = 1""",
-                       map(lambda x:(x, ), cats))
+        sources, words = self.getSelected()
+        #DB.setRegex(Settings.get('text_regex'))
+        DB.executemany("""update sources set active = 0 where rowid = ?""",
+                       map(lambda x:(x, ), sources))
+        DB.executemany("""update words set active = 0 where rowid = ?""",
+                       map(lambda x:(x, ), words))
         self.update()
 
     def getSelected(self):
-        texts = []
-        cats = []
+        sources = []
+        words = []
         for idx in self.tree.selectedIndexes():
             if idx.column() != 0:
                 continue
             if idx.parent().isValid():
-                texts.append(self.model.data(idx, Qt.UserRole)[0])
+                words.append(self.model.data(idx, Qt.UserRole)[0])
             else:
-                cats.append(self.model.data(idx, Qt.UserRole)[0])
-        return (cats, texts)
+                sources.append(self.model.data(idx, Qt.UserRole)[0])
+        return (sources, words)
 
     def doubleClicked(self, idx):
         p = idx.parent()
@@ -179,7 +172,7 @@ class TextManager(QWidget):
             return
 
         q = self.model.data(idx, Qt.UserRole)
-        v = DB.fetchall('select id,source,text from text where rowid = ?', (q[0], ))
+        #v = DB.fetchall('select id,source,text from text where rowid = ?', (q[0], ))
 
 
 

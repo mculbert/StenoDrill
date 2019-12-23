@@ -59,8 +59,8 @@ class DatabaseWidget(QWidget):
 
     def update(self):
         self.progress_.show()
-        n_words = DB.fetchone('''select count(*) from text''', (0,))[0] ; self.progress_.inc(2)
-        n_seen = DB.fetchone('''select count(*) from (select data from statistic group by data)''', (0,))[0] ; self.progress_.inc(2)
+        n_words = DB.fetchone('''select count(*) from words''', (0,))[0] ; self.progress_.inc(2)
+        n_seen = DB.fetchone('''select count(*) from (select word from statistic group by word)''', (0,))[0] ; self.progress_.inc(2)
         n_trials = DB.fetchone('''select sum(count) from statistic''', (0,))[0] ; self.progress_.inc(2)
         n_first = DB.fetchone('''select w from statistic order by w asc limit 1''',
             (time.time(),))[0] ; self.progress_.hide()
@@ -84,15 +84,15 @@ First result was %.2f days ago.\n''',
             w = now - day*lim
             g = grp * day
             q.extend( DB.fetchall('''
-                select avg(w),data,agg_mean(time,count),sum(count),sum(mistakes)
+                select avg(w),word,agg_mean(mpw,count),sum(count),sum(mistakes)
                 from statistic where w <= %f
-                group by data,cast(w/%f as int)''' % (w, g)) )
+                group by word,cast(w/%f as int)''' % (w, g)) )
             self.progress_.inc()
 
             DB.execute('''delete from statistic where w <= ?''', (w, ))
             self.progress_.inc()
 
-        DB.executemany('''insert into statistic (w,data,time,count,mistakes)
+        DB.executemany('''insert into statistic (w,word,mpw,count,mistakes)
             VALUES (?,?,?,?,?)''', q)
         self.progress_.inc()
         DB.commit()

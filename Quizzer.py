@@ -48,7 +48,8 @@ class Typer(QTextEdit):
 
     def setTarget(self,  text):
         self.editflag = True
-        self.target = text
+        self.target = text[1]
+        self.word_id = text[0]
         self.start_time = self.stroke_time = timer()
         self.stroke_count = 0
         self.mistroke = False
@@ -74,7 +75,7 @@ class Typer(QTextEdit):
               self.mistroke = True
 
     def getStats(self):
-        return self.target, (self.stroke_time - self.start_time), self.mistroke
+        return self.word_id, self.target, (self.stroke_time - self.start_time), self.mistroke
 
 class Quizzer(QWidget):
 
@@ -132,16 +133,17 @@ class Quizzer(QWidget):
         
         word = self.word_queue.pop()
         queue_len = len(self.word_queue)
-        self.label.setText(' '.join(['<b>' + word + '</b>'] +
-            self.word_queue[queue_len:(queue_len-num_show+1):-1]))
+        self.label.setText(' '.join(['<b>' + word[1] + '</b>'] +
+            list(map(lambda x: x[1], self.word_queue[queue_len:(queue_len-num_show+1):-1]))))
         self.typer.setTarget(word)
         self.typer.setFocus()
 
     def done(self):
         now = timer()
-        word, word_time, mistroke = self.typer.getStats()
+        word_id, word, word_time, mistroke = self.typer.getStats()
+        mpw = word_time / (12.0 * len(word))
 
-        self.wpm_num += 12.0 * len(word) / word_time
+        self.wpm_num += 1.0 / mpw
         self.wpm_denom += 1
         self.acc_num += 1 - int(mistroke)
         self.acc_denom += 1
@@ -150,7 +152,7 @@ class Quizzer(QWidget):
                              100. * self.acc_num / self.acc_denom))
 
         DB.execute('''insert into statistic
-            (time,w,count,mistakes,data) values (?,?,?,?,?)''',
-            (word_time / len(word), now, 1, int(mistroke), word))
+            (w,word,mpw,count,mistakes) values (?,?,?,?,?)''',
+            (now, word_id, mpw, 1, int(mistroke)))
         
         self.nextWord()

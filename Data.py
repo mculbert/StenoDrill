@@ -9,6 +9,7 @@ import time
 import bisect
 import sqlite3
 import re
+from PyQt5.QtWidgets import QApplication, QMessageBox
 
 
 def trimmed_average(total, series):
@@ -118,10 +119,10 @@ class AmphDatabase(sqlite3.Connection):
         self.create_aggregate("agg_mean", 2, MeanAggregate)
         self.create_aggregate("agg_first", 1, FirstAggregate)
         #self.create_aggregate("agg_trimavg", 2, TrimmedAverarge)
-        self.create_function("ifelse", 3, lambda x, y, z: y if x is not None else z)
+        self.create_function("ifelse", 3, lambda x, y, z: y if x else z)
 
         try:
-            self.fetchall("select * from settings,source,statistic,text limit 1")
+            self.fetchall("select * from settings,sources,words,source_words,statistic limit 1")
         except:
             self.newDB()
 
@@ -157,12 +158,16 @@ class AmphDatabase(sqlite3.Connection):
     def newDB(self):
         self.executescript("""
 create table settings (name text primary key, value text);
-create table source (name text, disabled integer);
-create table text (id text primary key, source integer, text text, disabled integer);
-create table statistic (w real, data text, time real, count integer, mistakes integer);
-create view text_source as
-    select id,s.name,text,coalesce(t.disabled,s.disabled)
-        from text as t left join source as s on (t.source = s.rowid);
+create table sources (name text, active integer);
+create table words (word text, active integer);
+create table source_words (source integer, word integer);
+create table statistic (w real, word integer, mpw real, count integer, mistakes integer);
+create view active_words as
+    select distinct w.rowid as id, w.word
+    from sources as s
+    join source_words as sw on (s.rowid = sw.source)
+    join words as w on (sw.word = w.rowid)
+    where s.active = 1 and w.active = 1;
         """)
         self.commit()
 
@@ -182,15 +187,6 @@ create view text_source as
             return default
         return g
 
-    def getSource(self, source):
-        v = self.fetchall('select rowid from source where name = ? limit 1', (source, ))
-        if len(v) > 0:
-            self.execute('update source set disabled = NULL where rowid = ?', v[0])
-            self.commit()
-            return v[0][0]
-        self.execute('insert into source (name,disabled) values (?,?)', (source, None))
-        return self.getSource(source)
-
 
 
 # GLOBAL
@@ -206,8 +202,8 @@ def load_db(new_db):
         DB = nDB
         dbname = new_db
     except Exception as e:
-        from PyQt5.QtGui import QMessageBox as qmb
-        qmb.information(None, "Database Error", "Failed to load database:\n" + str(e))
+        app = QApplication([])
+        QMessageBox.information(None, "Database Error", "Failed to load database:\n" + str(e))
 
 
 

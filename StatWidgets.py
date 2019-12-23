@@ -72,12 +72,13 @@ class StringStats(QWidget):
         count = Settings.get('ana_count')
         hist = time.time() - Settings.get('history') * 86400.0
 
-        sql = """select data,12.0/time as wpm,
+        sql = """select w.word,1.0/mpw as wpm,
             100.0-100.0*misses/cast(total as real) as accuracy,total,misses
                 from
-                    (select data,agg_median(time) as time,
+                    (select word,agg_median(mpw) as mpw,
                     sum(count) as total,sum(mistakes) as misses
-                    from statistic where w >= ? group by data)
+                    from statistic where w >= ? group by word) as s
+                join words as w on (s.word = w.rowid)
                 where total >= ?
                 order by %s limit %d""" % (ord, limit)
 
