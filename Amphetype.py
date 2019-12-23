@@ -32,8 +32,9 @@ from Performance import PerformanceHistory
 from Config import PreferenceWidget
 from Database import DatabaseWidget
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
 
 QApplication.setStyle('cleanlooks')
 

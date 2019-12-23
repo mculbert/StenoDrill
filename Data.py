@@ -206,7 +206,7 @@ def load_db(new_db):
         DB = nDB
         dbname = new_db
     except Exception, e:
-        from PyQt4.QtGui import QMessageBox as qmb
+        from PyQt5.QtGui import QMessageBox as qmb
         qmb.information(None, "Database Error", "Failed to load database:\n" + str(e))
 
 

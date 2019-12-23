@@ -11,9 +11,9 @@ from Data import DB
 from QtUtil import *
 from Config import *
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-from PyQt4.QtCore import pyqtSignal as Signal
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtCore import pyqtSignal as Signal
 
 
 class SourceModel(AmphModel):
@@ -86,8 +86,7 @@ class TextManager(QWidget):
 
     def addFiles(self):
 
-        qf = QFileDialog(self, "Import Text From File(s)")
-        qf.setFilters(["UTF-8 text files (*.txt)", "All files (*)"])
+        qf = QFileDialog(self, "Import Text From File(s)", filter="UTF-8 text files (*.txt);;All files (*)")
         qf.setFileMode(QFileDialog.ExistingFiles)
         qf.setAcceptMode(QFileDialog.AcceptOpen)
 

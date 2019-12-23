@@ -1,9 +1,9 @@
 
 from __future__ import with_statement, division
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
 
 
 class WWLabel(QLabel):
@@ -112,9 +112,10 @@ class AmphModel(QAbstractItemModel):
         self.reset()
 
     def reset(self):
+        self.beginResetModel()
         self.rows = self.populateData(())
         self.idxs = {}
-        QAbstractItemModel.reset(self)
+        self.endResetModel()
 
     def populateData(self, idxs):
         pass
@@ -132,7 +133,7 @@ class AmphTree(QTreeView):
         self.setWordWrap(True)
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         #self.setExpandsOnDoubleClick(False)
-        self.header().setClickable(True)
+        self.header().setSectionsClickable(True)
         self.header().sectionClicked.connect(self.sortByColumn)
 
 

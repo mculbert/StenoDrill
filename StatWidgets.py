@@ -7,8 +7,8 @@ from Data import DB
 from QtUtil import *
 from Config import *
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 
 
 

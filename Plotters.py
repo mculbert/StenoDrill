@@ -1,7 +1,8 @@
 
 from Config import Settings
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
 import math
 
 class HoverItem(QGraphicsRectItem):
@@ -43,15 +44,17 @@ class Plot(QGraphicsScene):
             self.addLine(x[i], -y[i], x[i+1], -y[i+1], p)
 
         # Add axes
+        xp = QPen(Qt.black)
+        xp.setWidth(0)
         if Settings.get('show_xaxis'):
             if min_y > 0:
                 min_y = 0
             elif max_y < 0:
                 max_y = 0
         if min_y <= 0 <= min_y:
-            self.addLine(min_x, 0, max_x, 0)
+            self.addLine(min_x, 0, max_x, 0, xp)
         if min_x <= 0 <= max_x:
-            self.addLine(0, -min_y, 0, -max_y)
+            self.addLine(0, -min_y, 0, -max_y, xp)
 
         w, h = max_x - min_x, max_y - min_y
 
@@ -67,6 +70,7 @@ class Plot(QGraphicsScene):
         start = ns
 
         qp = QPen(QColor(Qt.lightGray))
+        qp.setWidth(0)
         qp.setStyle(Qt.DotLine)
 
         while start < max_y + spc:
@@ -75,7 +79,7 @@ class Plot(QGraphicsScene):
 
             lbl = QGraphicsSimpleTextItem("%g" % start)
             th, tw = lbl.boundingRect().height(), lbl.boundingRect().width()
-            lbl.scale(0.026*w/tw, spc/th)
+            lbl.setTransform(QTransform.fromScale(0.026*w/tw, spc/th))
             lbl.setPos(QPointF(min_x - 0.03*w, -start-spc/2))
             self.addItem(lbl)
 

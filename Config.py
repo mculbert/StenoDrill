@@ -4,9 +4,9 @@ from __future__ import with_statement
 import cPickle
 from Data import DB
 from QtUtil import *
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-from PyQt4.QtCore import pyqtSignal as Signal
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtCore import pyqtSignal as Signal
 
 class AmphSetting(QObject):
 

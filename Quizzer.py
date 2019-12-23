@@ -12,9 +12,9 @@ import re
 from Data import Statistic, DB
 from Config import Settings
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-from PyQt4.QtCore import pyqtSignal as Signal
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtCore import pyqtSignal as Signal
 from QtUtil import *
 
 
@@ -64,7 +64,7 @@ class Typer(QTextEdit):
         if now - self.stroke_time > .05 : self.stroke_count += 1
         self.stroke_time = now
         
-        entered_text = self.toPlainText().trimmed()
+        entered_text = self.toPlainText().strip()
         if entered_text == self.target :
           self.done.emit()
         else :

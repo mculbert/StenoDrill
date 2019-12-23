@@ -11,8 +11,8 @@ from QtUtil import *
 
 import Plotters
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 
 
 def dampen(x, n=10):
@@ -146,7 +146,7 @@ class PerformanceHistory(QWidget):
             where = ''
         else:
             s = self.cb_source.itemData(self.cb_source.currentIndex())
-            where = 'join text as s on (r.data = s.text) where (s.source = %d)' % s.toInt()[0]
+            where = 'join text as s on (r.data = s.text) where (s.source = %d)' % s
 
         g = Settings.get('perf_group_by')
         group = ''
