@@ -52,6 +52,7 @@ class Typer(QTextEdit):
     def setTarget(self,  text):
         self.editflag = True
         self.target = text[1]
+        if Settings.get('ignore_case'): self.target = self.target.lower()
         self.word_id = text[0]
         self.start_time = self.stroke_time = timer()
         self.stroke_count = 0
@@ -69,6 +70,7 @@ class Typer(QTextEdit):
         self.stroke_time = now
         
         entered_text = self.toPlainText().strip()
+        if Settings.get('ignore_case'): entered_text = entered_text.lower()
         if entered_text == self.target :
           self.done.emit()
         else :

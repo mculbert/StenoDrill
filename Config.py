@@ -49,6 +49,7 @@ class AmphSettings(QObject):
 
     defaults = {
             "typer_font": str(QFont("Arial", 14).toString()),
+            "ignore_case": True,
             "history": 30.0,
             "perf_group_by": 0,
             "perf_items": 100,
@@ -188,6 +189,7 @@ class PreferenceWidget(QWidget):
 
         self.setLayout(AmphBoxLayout([
             ["Typer font is", self.font_lbl, AmphButton("Change...", self.setFont), None],
+            [SettingsCheckBox("ignore_case", "Ignore capitalization"), None],
             ["Data is considered too old to be included in analysis after",
                 SettingsEdit("history"), "days.", None],
             ["Show", SettingsEdit('num_rand'), "words at a time.", None],
