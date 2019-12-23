@@ -205,7 +205,7 @@ def load_db(new_db):
         nDB = sqlite3.connect(new_db,5,0,"DEFERRED",False,AmphDatabase)
         DB = nDB
         dbname = new_db
-    except Exception, e:
+    except Exception as e:
         from PyQt5.QtGui import QMessageBox as qmb
         qmb.information(None, "Database Error", "Failed to load database:\n" + str(e))
 

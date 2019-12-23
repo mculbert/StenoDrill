@@ -1,7 +1,7 @@
 
 from __future__ import with_statement
 
-import cPickle
+import pickle
 from Data import DB
 from QtUtil import *
 from PyQt5.QtCore import *
@@ -19,9 +19,9 @@ class AmphSetting(QObject):
         value = DB.fetchall('''select value from settings where name = ?''', (name,))
         if (len(value) > 0):
             # Load value from database
-            self.value = cPickle.loads(str(value[0][0]))
+            self.value = pickle.loads(value[0][0])
             self.in_db = True
-        elif AmphSettings.defaults.has_key(name):
+        elif name in AmphSettings.defaults:
             # Use default value
             self.value = AmphSettings.defaults[name]
             self.in_db = False
@@ -37,10 +37,10 @@ class AmphSetting(QObject):
         self.value = value
         if self.in_db:
             DB.execute('''update settings set value = ? where name = ?''',
-                       (cPickle.dumps(value), self.name))
+                       (pickle.dumps(value), self.name))
         else:
             DB.execute('''insert into settings (name,value) values (?,?)''',
-                       (self.name, cPickle.dumps(value)))
+                       (self.name, pickle.dumps(value)))
             self.in_db = True
         self.change.emit()
 
@@ -84,7 +84,7 @@ class AmphSettings(QObject):
         self.cache = {}
     
     def __getitem__(self, k):
-        if not self.cache.has_key(k):
+        if k not in self.cache:
             self.cache[k] = AmphSetting(k)
         return self.cache[k]
     
@@ -120,7 +120,7 @@ class SettingsColor(AmphButton):
         color = QColorDialog.getColor(Settings.getColor(self.key_), self)
         if not color.isValid():
             return
-        Settings.set(self.key_, unicode(color.name()))
+        Settings.set(self.key_, color.name())
         self.updateIcon()
 
     def updateIcon(self):
@@ -140,7 +140,7 @@ class SettingsEdit(AmphEdit):
         validator = None
         if isinstance(val, float):
             validator = QDoubleValidator
-        elif isinstance(val, (int, long)):
+        elif isinstance(val, int):
             validator = QIntValidator
         if validator is None:
             self.fmt = lambda x: x
@@ -161,7 +161,7 @@ class SettingsCombo(QComboBox):
         prev = sttg.get()
         self.idx2item = []
         for i in range(len(lst)):
-            if isinstance(lst[i], basestring):
+            if isinstance(lst[i], str):
                 # not a tuple, use index as key
                 k, v = i, lst[i]
             else:
@@ -200,7 +200,7 @@ class PreferenceWidget(QWidget):
 
     def setFont(self):
         font, ok = QFontDialog.getFont(Settings.getFont('typer_font'), self)
-        Settings.set("typer_font", unicode(font.toString()))
+        Settings.set("typer_font", font.toString())
         self.updateFont()
 
     def updateFont(self):

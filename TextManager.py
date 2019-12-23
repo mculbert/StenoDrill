@@ -25,7 +25,7 @@ class SourceModel(AmphModel):
     def populateData(self, idxs):
         # FIXME: Seems like WPM should be recent/time-bound, instead of global avg
         if len(idxs) == 0:
-            return map(list, DB.fetchall("""
+            return list(map(list, DB.fetchall("""
             select s.rowid,s.name,r.total,100.0*r.seen/r.total,r.wpm,ifelse(nullif(r.total,r.dis),'No','Yes')
                     from source as s
                     left join (select source, count(*) as total, count(wpm) as seen, avg(wpm) as wpm, count(disabled) as dis
@@ -35,18 +35,18 @@ class SourceModel(AmphModel):
                                group by source) as r
                     on (s.rowid = r.source)
                     where s.disabled is null
-                    order by s.name"""))
+                    order by s.name""")))
 
         if len(idxs) > 1:
             return []
 
         r = self.rows[idxs[0]]
 
-        return map(list, DB.fetchall("""select t.rowid,t.text,r.count as total,NULL as progress,r.wpm,ifelse(t.disabled,'Yes','No')
+        return list(map(list, DB.fetchall("""select t.rowid,t.text,r.count as total,NULL as progress,r.wpm,ifelse(t.disabled,'Yes','No')
                 from (select rowid,* from text where source = ?) as t
                 left join (select data,sum(count) as count,agg_median(12.0/time) as wpm from statistic group by data) as r
                     on (t.text = r.data)
-                order by t.rowid""", (r[0], )))
+                order by t.rowid""", (r[0], ))))
 
 
 
@@ -97,7 +97,7 @@ class TextManager(QWidget):
     def setImpList(self, files):
         self.sender().hide()
         #self.progress.show()
-        for x in map(unicode, files):
+        for x in files:
             #self.progress.setValue(0)
             fname = path.basename(x)
             # Import one word per line,
@@ -122,7 +122,7 @@ class TextManager(QWidget):
                 DB.execute("insert into text (id,text,source,disabled) values (?,?,?,?)",
                            (txt_id, x, id, None))
                 r.append(txt_id)
-            except Exception, e:
+            except Exception as e:
                 pass # silently skip ...
         if update:
             self.update()

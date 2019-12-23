@@ -95,6 +95,7 @@ First result was %.2f days ago.\n''',
         DB.executemany('''insert into statistic (w,data,time,count,mistakes)
             VALUES (?,?,?,?,?)''', q)
         self.progress_.inc()
+        DB.commit()
         DB.execute('vacuum')
         self.progress_.inc()
         DB.commit()

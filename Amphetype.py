@@ -99,7 +99,6 @@ w.show()
 
 app.exec_()
 
-print "exit"
 DB.commit()
 
 
