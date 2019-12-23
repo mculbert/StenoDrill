@@ -25,6 +25,8 @@ if platform.system() == "Windows":
 else:
     timer = time.time
 
+def rev(x): x.reverse(); return x
+
 
 class Typer(QTextEdit):
 
@@ -132,9 +134,8 @@ class Quizzer(QWidget):
             return
         
         word = self.word_queue.pop()
-        queue_len = len(self.word_queue)
         self.label.setText(' '.join(['<b>' + word[1] + '</b>'] +
-            list(map(lambda x: x[1], self.word_queue[queue_len:(queue_len-num_show+1):-1]))))
+            list(map(lambda x: x[1], rev(self.word_queue[(len(self.word_queue)-num_show+1):])))))
         self.typer.setTarget(word)
         self.typer.setFocus()
 
