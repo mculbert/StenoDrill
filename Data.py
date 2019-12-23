@@ -6,6 +6,7 @@ from __future__ import division, with_statement
 
 from itertools import *
 import time
+import math
 import bisect
 import sqlite3
 import re
@@ -145,6 +146,7 @@ class AmphDatabase(sqlite3.Connection):
         self.create_function("regex_match", 1, self.match)
         self.create_function("abbreviate", 2, self.abbreviate)
         self.create_function("time_group", 2, self.time_group)
+        self.create_function("pow", 2, lambda base, exp: None if base is None else math.pow(base, exp))
         self.create_aggregate("agg_median", 1, MedianAggregate)
         self.create_aggregate("agg_mean", 2, MeanAggregate)
         self.create_aggregate("agg_first", 1, FirstAggregate)
