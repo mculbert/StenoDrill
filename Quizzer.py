@@ -167,8 +167,9 @@ class Quizzer(QWidget):
                             (self.wpm_num / self.wpm_denom,
                              100. * self.acc_num / self.acc_denom))
 
-        DB.execute('''insert into statistic
-            (w,word,mpw,count,mistakes) values (?,?,?,?,?)''',
-            (now, word_id, mpw, 1, int(mistroke)))
+        # Don't record statistics for words < 6 WPM (ignoring word length)
+        if word_time < 10.0 :
+            DB.execute('''insert into statistic (w,word,mpw,count,mistakes) values (?,?,?,?,?)''',
+                       (now, word_id, mpw, 1, int(mistroke)))
         
         self.nextWord()
