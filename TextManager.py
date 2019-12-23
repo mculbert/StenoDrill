@@ -54,7 +54,6 @@ class SourceModel(AmphModel):
 class TextManager(QWidget):
 
     refreshSources = Signal()
-    addWords = Signal(list)
 
     def __init__(self, *args):
         super(TextManager, self).__init__(*args)
@@ -126,13 +125,6 @@ class TextManager(QWidget):
     def update(self):
         self.refreshSources.emit()
         self.model.reset()
-
-    def genWords(self):
-        num_words = Settings.get('num_rand')
-        # Fetch random words
-        v = DB.execute("select * from active_words order by random() limit %d" % num_words).fetchall()
-        if len(v) > 0 :
-            self.addWords.emit(v)
 
     def removeDisabled(self):
         # FIXME

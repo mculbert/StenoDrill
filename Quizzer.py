@@ -81,8 +81,6 @@ class Typer(QTextEdit):
 
 class Quizzer(QWidget):
 
-    wantWords = Signal()
-
     def __init__(self, *args):
         super(Quizzer, self).__init__(*args)
         
@@ -121,13 +119,17 @@ class Quizzer(QWidget):
         self.label.setFont(f)
         self.typer.setFont(f)
     
-    def addWords(self, words):
-        self.word_queue = words + self.word_queue
+    def addWords(self):
+        num_words = Settings.get('num_rand')
+        # Fetch random words
+        words = DB.execute("select * from active_words order by random() limit %d" % num_words).fetchall()
+        if len(words) > 0 :
+            self.word_queue = words + self.word_queue
 
     def nextWord(self):
         num_show = Settings.get('num_rand')
         if len(self.word_queue) < num_show :
-            self.wantWords.emit()
+            self.addWords()
         if len(self.word_queue) == 0 :
             # No words available. Use placeholder text.
             self.label.setText("""Welcome to StenoDrill!\nA program that not only measures your speed and progress, but also helps you drill the briefs that holding you back the most. This is just a default text since your database is empty. Add lists of words to drill on the "Sources" tab. Then hit the escape key (ESC) to start your drill.""")
