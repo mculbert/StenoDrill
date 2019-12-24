@@ -71,6 +71,7 @@ class AmphSettings(QObject):
             "group_week": 30.0,
             "group_day": 7.0,
 
+            "ana_how": 1,
             "ana_which": "wpm asc",
             "ana_many": 30,
             "ana_count": 1,

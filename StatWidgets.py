@@ -42,6 +42,7 @@ class StringStats(QWidget):
         tw.setRootIsDecorated(False)
         self.stats = tw
 
+        h = SettingsCombo('ana_how', ['current', 'recent'])
         ob = SettingsCombo('ana_which', [
                     ('wpm asc', 'slowest'),
                     ('wpm desc', 'fastest'),
@@ -53,13 +54,14 @@ class StringStats(QWidget):
         lim = SettingsEdit('ana_many')
         self.w_count = SettingsEdit('ana_count')
 
+        Settings['ana_how'].change.connect(self.update)
         Settings['ana_which'].change.connect(self.update)
         Settings['ana_many'].change.connect(self.update)
         Settings['ana_count'].change.connect(self.update)
         Settings['history'].change.connect(self.update)
 
         self.setLayout(AmphBoxLayout([
-                ["Display statistics about the", ob, "words", None, AmphButton("Update List", self.update)],
+                ["Display", h, "statistics about the", ob, "words", None, AmphButton("Update List", self.update)],
                 ["Limit list to", lim, "items and don't show items with a count less than", self.w_count,
                     None, None],
                 (self.stats, 1)
@@ -71,16 +73,18 @@ class StringStats(QWidget):
         limit = Settings.get('ana_many')
         count = Settings.get('ana_count')
         hist = time.time() - Settings.get('history') * 86400.0
+        
+        if Settings.get('ana_how'):
+            how = '''(select word,agg_median_firstN(mpw, 10) as mpw,agg_sum_firstN(count, 10) as seen,agg_sum_firstN(mistakes, 10) as mistakes
+                     from (select * from statistic where w >= ? order by w desc) group by word)'''
+        else:
+            how = '''(select word,agg_median(mpw) as mpw,sum(count) as seen,sum(mistakes) as mistakes
+                    from statistic where w >= ? group by word)'''
 
         sql = """select w.word,1.0/mpw as wpm,
-            100.0-100.0*misses/cast(total as real) as accuracy,total,misses
-                from
-                    (select word,agg_median(mpw) as mpw,
-                    sum(count) as total,sum(mistakes) as misses
-                    from statistic where w >= ? group by word) as s
-                join words as w on (s.word = w.rowid)
-                where total >= ?
-                order by %s limit %d""" % (ord, limit)
+            100.0-100.0*mistakes/cast(seen as real) as accuracy,seen,mistakes
+                from %s as s join words as w on (s.word = w.rowid)
+                where s.seen >= ? order by %s limit %d""" % (how, ord, limit)
 
         self.model.setData(DB.fetchall(sql, (hist, count)))
 
