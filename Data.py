@@ -57,7 +57,7 @@ class Statistic(list):
         return cmp(self.median(), other.median())
 
     def measurement(self):
-        return trimmed_average(len(self), map(lambda x:(x, 1), self))
+        return trimmed_average(len(self), list(map(lambda x:(x, 1), self)))
 
     def median(self):
         l = len(self)

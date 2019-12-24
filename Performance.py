@@ -110,7 +110,7 @@ class PerformanceHistory(QWidget):
         y = list(map(lambda x:x[pc], self.model.rows))
 
         if Settings.get("chrono_x"):
-            x = map(lambda x:x[1], self.model.rows)
+            x = list(map(lambda x:x[1], self.model.rows))
         else:
             x = list(range(len(y)))
             x.reverse()
