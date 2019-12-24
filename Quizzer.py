@@ -141,6 +141,7 @@ class Quizzer(QWidget):
     def break_time(self):
         self.label.setText("Break time!\nWhen you've finished your break, hit the escape key (ESC) to start your drill.")
         self.typer.setTarget()
+        DB.commit()
         
     def addWords(self):
         num_words = Settings.get('num_rand')
