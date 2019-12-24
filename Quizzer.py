@@ -148,12 +148,34 @@ class Quizzer(QWidget):
         dist = DB.execute('''select w.id, w.word, pow(mpw * (1+mistakes/seen), 3) as priority
             from active_words as w left join word_status as s on (w.id = s.word)
             order by priority asc''').fetchall()
-        if len(dist) > 0 :
+        if len(dist) == 0 :
+            return
+        elif len(dist) == 1 :
+            # We only have one word available, so replicate it
+            self.word_queue = (dist * num_words) + self.word_queue
+        elif len(dist) == 2 :
+            words = (dist * (num_words // 2))
+            if (num_words & 0x1) : # We need an odd number of words
+                if (len(self.word_queue) == 0 or
+                    self.word_queue[0][0] == words[-1][0]) :
+                    # If the queue doesn't have any words or the second word
+                    # of dist is the same as the first word currently in the
+                    # queue, tack on the most common word (first of dist)
+                    words.append(dist[0])
+                else :
+                    # The most common word (first of dict) is the same as the
+                    # first word currently in the queue, so we don't want to
+                    # tack that on to create a repetition. Instead, we'll
+                    # tack on the second word of dict to the *front*.
+                    words = [dist[1]] + words
+            # Add the new words to the queue
+            self.word_queue = words + self.word_queue
+        else :
             avg_priority = 0
             count = 0
-            for priority in [ row[2] for row in dist]:
-                if priority is not None:
-                    avg_priority += priority
+            for row in dist:
+                if row[2] is not None:
+                    avg_priority += row[2]
                     count += 1
             avg_priority = avg_priority / count if count > 0 else 1000.
             words = []
