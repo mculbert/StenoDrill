@@ -194,15 +194,15 @@ class PreferenceWidget(QWidget):
         self.setLayout(AmphBoxLayout([
             ["Typer font is", self.font_lbl, AmphButton("Change...", self.setFont), None],
             [SettingsCheckBox("ignore_case", "Ignore capitalization"), None],
-            [SettingsCheckBox("progressive", "Add new words progressively"), None],
-            ["Add words when you have typed words accurately",
+            [SettingsCheckBox("progressive", "Activate new words progressively"), None],
+            ["Activate words when you have typed words accurately",
               SettingsEdit("prog_times"), "times, ", None ],
             ["with a minimum speed of",
               SettingsEdit("prog_min"), "WPM and an average speed of",
               SettingsEdit("prog_avg"), "WPM.", None ],
+            ["Show", SettingsEdit('num_rand'), "words at a time.", None],
             ["Data is considered too old to be included in analysis after",
                 SettingsEdit("history"), "days.", None],
-            ["Show", SettingsEdit('num_rand'), "words at a time.", None],
             ["When grouping by sitting on the Performance tab, consider results more than",
                 SettingsEdit('minutes_in_sitting'), "minutes away to be part of a different sitting.", None],
             ["When smoothing out the graph, display a running average of", SettingsEdit('dampen_average'), "values", None]
