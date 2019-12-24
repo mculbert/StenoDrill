@@ -64,6 +64,7 @@ class AmphSettings(QObject):
             "chrono_x": False,
             "dampen_graph": False,
 
+            "breaks": True,
             "minutes_in_sitting": 60.0,
             "dampen_average": 10,
 
@@ -194,6 +195,8 @@ class PreferenceWidget(QWidget):
 
         self.setLayout(AmphBoxLayout([
             ["Typer font is", self.font_lbl, AmphButton("Change...", self.setFont), None],
+            [SettingsCheckBox("breaks", "Take breaks"), "after",
+             SettingsEdit('minutes_in_sitting'), "minutes.", None],
             [SettingsCheckBox("ignore_case", "Ignore capitalization"), None],
             [SettingsCheckBox("progressive", "Activate new words progressively"), None],
             ["Activate words when you have typed words accurately",
@@ -204,8 +207,6 @@ class PreferenceWidget(QWidget):
             ["Show", SettingsEdit('num_rand'), "words at a time.", None],
             ["Data is considered too old to be included in analysis after",
                 SettingsEdit("history"), "days.", None],
-            ["When grouping by sitting on the Performance tab, consider results more than",
-                SettingsEdit('minutes_in_sitting'), "minutes away to be part of a different sitting.", None],
             ["When smoothing out the graph, display a running average of", SettingsEdit('dampen_average'), "values", None]
         ]))
 

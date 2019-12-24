@@ -33,6 +33,7 @@ class Typer(QTextEdit):
 
     cancel = Signal()
     done = Signal()
+    null_word = (None, None)
     
     def __init__(self, *args):
         super(Typer, self).__init__(*args)
@@ -49,7 +50,7 @@ class Typer(QTextEdit):
             self.cancel.emit()
         return QTextEdit.keyPressEvent(self, e)
 
-    def setTarget(self,  text):
+    def setTarget(self,  text = null_word):
         self.editflag = True
         self.target = text[1]
         if Settings.get('ignore_case') and self.target is not None: self.target = self.target.lower()
@@ -96,6 +97,15 @@ class Quizzer(QWidget):
         self.typer.done.connect(self.done)
         self.typer.cancel.connect(self.resetStats)
         Settings['typer_font'].change.connect(self.readjust)
+        
+        self.break_timer = QTimer()
+        self.break_timer.setSingleShot(True)
+        self.break_timer.timeout.connect(self.break_time)
+        def reset_timer() :
+            if Settings['breaks'].get() : self.break_time()
+            else : self.break_timer.stop()
+        Settings['minutes_in_sitting'].change.connect(reset_timer)
+        Settings['breaks'].change.connect(reset_timer)
 
         self.word_queue = []
 
@@ -116,6 +126,8 @@ class Quizzer(QWidget):
         self.acc_denom = 0
         self.result.setText('')
         self.nextWord()
+        if Settings.get('breaks') :
+            self.break_timer.start(Settings.get('minutes_in_sitting') * 60000)
     
     def readjust(self):
         f = Settings.getFont("typer_font")
@@ -126,6 +138,10 @@ class Quizzer(QWidget):
         self.word_queue = []
         self.nextWord()
     
+    def break_time(self):
+        self.label.setText("Break time!\nWhen you've finished your break, hit the escape key (ESC) to start your drill.")
+        self.typer.setTarget()
+        
     def addWords(self):
         num_words = Settings.get('num_rand')
         # Check whether to activate new words
@@ -194,7 +210,7 @@ class Quizzer(QWidget):
         if len(self.word_queue) == 0 :
             # No words available. Use placeholder text.
             self.label.setText("""Welcome to StenoDrill!\nA program that not only measures your speed and progress, but also helps you drill the briefs that holding you back the most. This is just a default text since your database is empty. Add lists of words to drill on the "Sources" tab. Then hit the escape key (ESC) to start your drill.""")
-            self.typer.setTarget((None, None))
+            self.typer.setTarget()
             return
         
         word = self.word_queue.pop()
