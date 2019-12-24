@@ -128,8 +128,24 @@ class Quizzer(QWidget):
     
     def addWords(self):
         num_words = Settings.get('num_rand')
+        # Check whether to activate new words
+        if Settings.get('progressive'):
+            num, seen, min_wpm, avg_wpm = DB.fetchall(
+                '''select count(w.word), count((seen-mistakes) > %d), min(1.0/mpw), avg(1.0/mpw)
+                   from active_words as w left join word_status as ws on (w.id = ws.word)''' %
+                (Settings.get('prog_times'),))[0]
+            if num == 0 or ((seen == num) and (min_wpm >= Settings.get('prog_min')) and (avg_wpm >= Settings.get('prog_avg'))):
+                activate = DB.fetchall('''select w.rowid
+                    from sources as s
+                    join source_words as sw on (s.rowid = sw.source)
+                    join words as w on (sw.word = w.rowid)
+                    where s.active = 1 and w.active = 0
+                    order by s.rowid, w.rowid
+                    limit %d''' % (num_words,))
+                DB.execute('update words set active = 1 where rowid in (%s)' %
+                           ','.join([ str(row[0]) for row in activate ]))
         # Fetch random words, weighted by (mpw * (1+err_rate))^3
-        dist = DB.execute('''select w.id, w.word, pow(mpw * (1+err_rate), 3) as priority
+        dist = DB.execute('''select w.id, w.word, pow(mpw * (1+mistakes/seen), 3) as priority
             from active_words as w left join word_status as s on (w.id = s.word)
             order by priority asc''').fetchall()
         if len(dist) > 0 :

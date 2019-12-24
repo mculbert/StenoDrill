@@ -107,7 +107,8 @@ class TextManager(QWidget):
             for (word,) in DB.fetchall("select word from words"):
                 cur_words[word] = None
             # Insert new words
-            DB.executemany("insert into words (word,active) values (?,1)",
+            DB.executemany("insert into words (word,active) values (?,%d)" %
+                           0 if Settings.get('progressive') else 1,
                            map(lambda x: (x,), filter(lambda x: x not in cur_words, words)))
             # Fetch word ids
             for (word,word_id) in DB.fetchall("select word,rowid from words"):

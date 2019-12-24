@@ -50,6 +50,10 @@ class AmphSettings(QObject):
     defaults = {
             "typer_font": str(QFont("Arial", 14).toString()),
             "ignore_case": True,
+            "progressive": True,
+            "prog_times": 3,
+            "prog_min": 15,
+            "prog_avg": 20,
             "history": 30.0,
             "perf_group_by": 0,
             "perf_items": 100,
@@ -190,6 +194,12 @@ class PreferenceWidget(QWidget):
         self.setLayout(AmphBoxLayout([
             ["Typer font is", self.font_lbl, AmphButton("Change...", self.setFont), None],
             [SettingsCheckBox("ignore_case", "Ignore capitalization"), None],
+            [SettingsCheckBox("progressive", "Add new words progressively"), None],
+            ["Add words when you have typed words accurately",
+              SettingsEdit("prog_times"), "times, ", None ],
+            ["with a minimum speed of",
+              SettingsEdit("prog_min"), "WPM and an average speed of",
+              SettingsEdit("prog_avg"), "WPM.", None ],
             ["Data is considered too old to be included in analysis after",
                 SettingsEdit("history"), "days.", None],
             ["Show", SettingsEdit('num_rand'), "words at a time.", None],

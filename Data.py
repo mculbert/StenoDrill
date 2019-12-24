@@ -204,7 +204,7 @@ create view active_words as
     join words as w on (sw.word = w.rowid)
     where s.active = 1 and w.active = 1;
 create view word_status as
-    select word,agg_median_firstN(mpw, 10) as mpw,agg_sum_firstN(mistakes, 10)/agg_sum_firstN(count, 10) as err_rate
+    select word,agg_median_firstN(mpw, 10) as mpw,agg_sum_firstN(count, 10) as seen,agg_sum_firstN(mistakes, 10) as mistakes
     from (select * from statistic order by w desc) group by word;
         """)
         self.commit()
