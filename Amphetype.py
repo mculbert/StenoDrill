@@ -51,6 +51,7 @@ class TyperWindow(QMainWindow):
         tabs.addTab(quiz, "Typer")
 
         tm = TextManager()
+        tm.refreshSources.connect(quiz.clearWords)
         tabs.addTab(tm, "Sources")
 
         ph = PerformanceHistory()

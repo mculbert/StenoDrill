@@ -52,7 +52,7 @@ class Typer(QTextEdit):
     def setTarget(self,  text):
         self.editflag = True
         self.target = text[1]
-        if Settings.get('ignore_case'): self.target = self.target.lower()
+        if Settings.get('ignore_case') and self.target is not None: self.target = self.target.lower()
         self.word_id = text[0]
         self.start_time = self.stroke_time = timer()
         self.stroke_count = 0
@@ -108,7 +108,7 @@ class Quizzer(QWidget):
         self.setLayout(layout)
         self.readjust()
         self.resetStats()
-
+    
     def resetStats(self):
         self.wpm_num = 0
         self.wpm_denom = 0
@@ -121,6 +121,10 @@ class Quizzer(QWidget):
         f = Settings.getFont("typer_font")
         self.label.setFont(f)
         self.typer.setFont(f)
+    
+    def clearWords(self):
+        self.word_queue = []
+        self.nextWord()
     
     def addWords(self):
         num_words = Settings.get('num_rand')
@@ -148,6 +152,7 @@ class Quizzer(QWidget):
         if len(self.word_queue) == 0 :
             # No words available. Use placeholder text.
             self.label.setText("""Welcome to StenoDrill!\nA program that not only measures your speed and progress, but also helps you drill the briefs that holding you back the most. This is just a default text since your database is empty. Add lists of words to drill on the "Sources" tab. Then hit the escape key (ESC) to start your drill.""")
+            self.typer.setTarget((None, None))
             return
         
         word = self.word_queue.pop()

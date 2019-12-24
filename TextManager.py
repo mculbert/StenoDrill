@@ -34,7 +34,6 @@ class SourceModel(AmphModel):
                                on (sw.word = ss.word)
                                group by source) as r
                     on (s.rowid = r.source)
-                    where s.active = 1
                     order by s.name""")))
 
         if len(idxs) > 1:
@@ -62,7 +61,7 @@ class TextManager(QWidget):
         tv = AmphTree(self.model)
         tv.resizeColumnToContents(1)
         tv.setColumnWidth(0, 300)
-        tv.doubleClicked.connect(self.doubleClicked)
+        #tv.doubleClicked.connect(self.doubleClicked)
         self.tree = tv
 
         self.progress = QProgressBar()
@@ -75,13 +74,11 @@ class TextManager(QWidget):
                         (self.tree, 1),
                         self.progress,
                         [AmphButton("Import Texts", self.addFiles), None,
+                            AmphButton("Toggle Selected", self.toggleSelected),
                             AmphButton("Enable All", self.enableAll),
-                            AmphButton("Delete Disabled", self.removeDisabled), None,
+                            #AmphButton("Delete Disabled", self.removeDisabled),
+                            None,
                             AmphButton("Update List", self.update)],
-                        [ #AmphButton("Remove", self.removeSelected), "or",
-                            AmphButton("Toggle disabled", self.disableSelected),
-                            "on all selected texts that match <a href=\"http://en.wikipedia.org/wiki/Regular_expression\">regular expression</a>",
-                            SettingsEdit('text_regex')]
                 ], QBoxLayout.TopToBottom))
 
     def addFiles(self):
@@ -137,13 +134,16 @@ class TextManager(QWidget):
         DB.execute('update words set active = 1')
         self.update()
 
-    def disableSelected(self):
+    def toggleSelected(self):
         sources, words = self.getSelected()
-        #DB.setRegex(Settings.get('text_regex'))
-        DB.executemany("""update sources set active = 0 where rowid = ?""",
-                       map(lambda x:(x, ), sources))
-        DB.executemany("""update words set active = 0 where rowid = ?""",
-                       map(lambda x:(x, ), words))
+        if len(sources) > 0:
+            current = DB.fetchall('''select rowid, active from sources where rowid in (%s)''' % ','.join(map(str, sources)))
+            DB.executemany('''update sources set active = ? where rowid = ?''',
+                           map(lambda row: (1-row[1], row[0]), current))
+        if len(words) > 0:
+            current = DB.fetchall('''select rowid, active from words where rowid in (%s)''' % ','.join(map(str, words)))
+            DB.executemany('''update words set active = ? where rowid = ?''',
+                           map(lambda row: (1-row[1], row[0]), current))
         self.update()
 
     def getSelected(self):
@@ -159,12 +159,13 @@ class TextManager(QWidget):
         return (sources, words)
 
     def doubleClicked(self, idx):
-        p = idx.parent()
-        if not p.isValid():
-            return
-
-        q = self.model.data(idx, Qt.UserRole)
-        #v = DB.fetchall('select id,source,text from text where rowid = ?', (q[0], ))
+        if idx.parent().isValid():  # Word
+            DB.execute('''update words set active = 0 where rowid = ?''',
+                       (self.model.data(idx, Qt.UserRole)[0],))
+        else:                       # Source
+            DB.execute('''update sources set active = 0 where rowid = ?''',
+                       (self.model.data(idx, Qt.UserRole)[0],))
+        self.update()
 
 
 
