@@ -95,6 +95,8 @@ class TextManager(QWidget):
         self.sender().hide()
         for x in files:
             fname = path.basename(x)
+            if fname.lower().endswith('.txt'):
+                fname = fname[:-4]
             # Import one word per line,
             #  optionally tab delimited with stroke following
             words = [ line.split('\t')[0].strip() for line in
