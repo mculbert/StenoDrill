@@ -225,16 +225,15 @@ class Quizzer(QWidget):
         word_id, word, word_time, mistroke = self.typer.getStats()
         mpw = word_time / (12.0 * len(word))
 
-        self.wpm_num += 1.0 / mpw
-        self.wpm_denom += 1
-        self.acc_num += 1 - int(mistroke)
-        self.acc_denom += 1
-        self.result.setText("Speed: %.1fwpm\tAccuracy: %.1f%%" %
-                            (self.wpm_num / self.wpm_denom,
-                             100. * self.acc_num / self.acc_denom))
-
         # Don't record statistics for words < 6 WPM (ignoring word length)
         if word_time < 10.0 :
+            self.wpm_num += 1.0 / mpw
+            self.wpm_denom += 1
+            self.acc_num += 1 - int(mistroke)
+            self.acc_denom += 1
+            self.result.setText("Speed: %.1fwpm\tAccuracy: %.1f%%" %
+                                (self.wpm_num / self.wpm_denom,
+                                 100. * self.acc_num / self.acc_denom))
             DB.execute('''insert into statistic (w,word,mpw,count,mistakes) values (?,?,?,?,?)''',
                        (now, word_id, mpw, 1, int(mistroke)))
         
