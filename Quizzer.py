@@ -156,9 +156,13 @@ class Quizzer(QWidget):
                     avg_priority += priority
                     count += 1
             avg_priority = avg_priority / count if count > 0 else 1000.
-            words = random.choices(dist, k = num_words,
-                weights = [ (row[2] if row[2] is not None else avg_priority)
-                            for row in dist ])
+            words = []
+            while len(words) < num_words:
+                for word in random.choices(dist, k = num_words - len(words),
+                            weights = [ (row[2] if row[2] is not None else avg_priority)
+                                        for row in dist ]):
+                  if (len(words) == 0 or word[1] != words[-1][1]):
+                      words.append(word)
             self.word_queue = words + self.word_queue
 
     def nextWord(self):
