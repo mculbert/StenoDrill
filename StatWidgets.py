@@ -75,11 +75,11 @@ class StringStats(QWidget):
         hist = time.time() - Settings.get('history') * 86400.0
         
         if Settings.get('ana_how'):
-            how = '''(select word,agg_median_firstN(mpw, 10) as mpw,agg_sum_firstN(count, 10) as seen,agg_sum_firstN(mistakes, 10) as mistakes
-                     from (select * from statistic where w >= ? order by w desc) group by word)'''
-        else:
             how = '''(select word,agg_median(mpw) as mpw,sum(count) as seen,sum(mistakes) as mistakes
                     from statistic where w >= ? group by word)'''
+        else:
+            how = '''(select word,agg_median_firstN(mpw, 10) as mpw,agg_sum_firstN(count, 10) as seen,agg_sum_firstN(mistakes, 10) as mistakes
+                     from (select * from statistic where w >= ? order by w desc) group by word)'''
 
         sql = """select w.word,1.0/mpw as wpm,
             100.0-100.0*mistakes/cast(seen as real) as accuracy,seen,mistakes
