@@ -148,7 +148,7 @@ class Quizzer(QWidget):
         # Check whether to activate new words
         if Settings.get('progressive'):
             num, seen, min_wpm, avg_wpm = DB.fetchall(
-                '''select count(w.word), count((seen-mistakes) > %d), min(1.0/mpw), avg(1.0/mpw)
+                '''select count(w.word), sum((seen-mistakes) >= %d), min(1.0/mpw), avg(1.0/mpw)
                    from active_words as w left join word_status as ws on (w.id = ws.word)''' %
                 (Settings.get('prog_times'),))[0]
             if num == 0 or ((seen == num) and (min_wpm >= Settings.get('prog_min')) and (avg_wpm >= Settings.get('prog_avg'))):
@@ -162,10 +162,11 @@ class Quizzer(QWidget):
                 DB.execute('update words set active = 1 where rowid in (%s)' %
                            ','.join([ str(row[0]) for row in activate ]))
         # Fetch random words, weighted by (mpw * (1+err_rate))^3
-        dist = DB.execute('''select w.id, w.word, pow(mpw * (1+mistakes/seen), 3) as priority
-            from active_words as w left join word_status as s on (w.id = s.word)
-            order by priority asc''').fetchall()
+        dist = DB.fetchall('''select w.id, w.word, ifelse((seen-mistakes) < %d, NULL, pow(mpw * (1+mistakes/seen), 3)) as priority
+            from active_words as w left join word_status as s on (w.id = s.word)''' %
+            (Settings.get('prog_times') if Settings.get('progressive') else 0,))
         if len(dist) == 0 :
+            # No words availabile
             return
         elif len(dist) == 1 :
             # We only have one word available, so replicate it
@@ -177,28 +178,29 @@ class Quizzer(QWidget):
                     self.word_queue[0][0] == words[-1][0]) :
                     # If the queue doesn't have any words or the second word
                     # of dist is the same as the first word currently in the
-                    # queue, tack on the most common word (first of dist)
+                    # queue, tack on the first of dist
                     words.append(dist[0])
                 else :
-                    # The most common word (first of dict) is the same as the
-                    # first word currently in the queue, so we don't want to
-                    # tack that on to create a repetition. Instead, we'll
-                    # tack on the second word of dict to the *front*.
+                    # The first word of dict is the same as the first word
+                    # currently in the queue, so we don't want to tack that
+                    # on to create a repetition. Instead, we'll tack on the
+                    # second word of dict to the *front*.
                     words = [dist[1]] + words
             # Add the new words to the queue
             self.word_queue = words + self.word_queue
         else :
-            avg_priority = 0
-            count = 0
+            max_priority = 0
             for row in dist:
-                if row[2] is not None:
-                    avg_priority += row[2]
-                    count += 1
-            avg_priority = avg_priority / count if count > 0 else 1000.
+                if row[2] is not None and row[2] > max_priority :
+                    max_priority = row[2]
+            if max_priority == 0 : max_priority = 1 # No priorities
             words = []
             while len(words) < num_words:
+                # If a word hasn't been seen (at least 'prog_times' if
+                # 'progressive'), use the maximum priority to increase
+                # its chances of exposure.
                 for word in random.choices(dist, k = num_words - len(words),
-                            weights = [ (row[2] if row[2] is not None else avg_priority)
+                            weights = [ (row[2] if row[2] is not None else max_priority)
                                         for row in dist ]):
                   if (len(words) == 0 or word[1] != words[-1][1]):
                       words.append(word)
