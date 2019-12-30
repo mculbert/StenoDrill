@@ -47,8 +47,8 @@ class StringStats(QWidget):
                     ('wpm asc', 'slowest'),
                     ('wpm desc', 'fastest'),
                     ('accuracy asc', 'least accurate'),
-                    ('misses desc', 'most mistyped'),
-                    ('total desc', 'most common'),
+                    ('mistakes desc', 'most mistyped'),
+                    ('seen desc', 'most common'),
                     ])
 
         lim = SettingsEdit('ana_many')
