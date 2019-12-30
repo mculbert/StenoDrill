@@ -136,9 +136,10 @@ class PerformanceHistory(QWidget):
             return
 
         sql = '''select agg_first(r.word),avg(r.w) as w, sum(count) as num,
-            1.0/agg_median(r.mpw) as wpm,
+            sum(count * length(w.word))/sum(r.mpw * length(w.word) * count) as wpm,
             100-100.0*sum(mistakes)/sum(count) as accuracy
             from statistic as r
+            join words as w on (r.word = w.rowid)
             %s %s
             order by w desc limit %d'''
 

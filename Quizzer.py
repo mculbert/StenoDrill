@@ -229,8 +229,8 @@ class Quizzer(QWidget):
 
         # Don't record statistics for words < 6 WPM (ignoring word length)
         if word_time < 10.0 :
-            self.wpm_num += 1.0 / mpw
-            self.wpm_denom += 1
+            self.wpm_num += len(word) / 5.
+            self.wpm_denom += word_time / 60.
             self.acc_num += 1 - int(mistroke)
             self.acc_denom += 1
             self.result.setText("Speed: %.1fwpm\tAccuracy: %.1f%%" %
